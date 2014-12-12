@@ -31,8 +31,14 @@ require './libraries/plugins/auth/swekey/swekey.auth.lib.php';
 /**
  * phpseclib
  */
-require PHPSECLIB_INC_DIR . '/Crypt/AES.php';
-require PHPSECLIB_INC_DIR . '/Crypt/Random.php';
+if (! function_exists('openssl_encrypt')
+    || ! function_exists('openssl_decrypt')
+    || ! function_exists('openssl_random_pseudo_bytes')
+    || PHP_VERSION_ID < 50304
+) {
+    require PHPSECLIB_INC_DIR . '/Crypt/AES.php';
+    require PHPSECLIB_INC_DIR . '/Crypt/Random.php';
+}
 
 /**
  * Handles the cookie authentication method
@@ -62,11 +68,8 @@ class AuthenticationCookie extends AuthenticationPlugin
         $response = PMA_Response::getInstance();
         if ($response->isAjax()) {
             $response->isSuccess(false);
-
-            $response->addJSON(
-                'redirect_flag',
-                '1'
-            );
+            // redirect_flag redirects to the login page
+            $response->addJSON('redirect_flag', '1');
             if (defined('TESTSUITE')) {
                 return true;
             } else {
@@ -251,12 +254,14 @@ class AuthenticationCookie extends AuthenticationPlugin
                  </noscript>
                  <script type="text/javascript">
                     $(function() {
-                        $("#recaptcha_reload_btn," +
+                        $(document).on(
+                          "mouseover",
+                          "#recaptcha_reload_btn," +
                           "#recaptcha_switch_audio_btn," +
                           "#recaptcha_switch_img_btn," +
                           "#recaptcha_whatsthis_btn," +
-                          "#recaptcha_audio_play_again")
-                        .live("mouseover", function() {
+                          "#recaptcha_audio_play_again"
+                          function() {
                             $(this).addClass("disableAjax");
                         });
                     });
@@ -314,7 +319,7 @@ class AuthenticationCookie extends AuthenticationPlugin
      *
      * it returns true if all seems ok which usually leads to auth_set_user()
      *
-     * it directly switches to authFails() if user inactivity timout is reached
+     * it directly switches to authFails() if user inactivity timeout is reached
      *
      * @return boolean   whether we get authentication settings or not
      */
@@ -476,6 +481,7 @@ class AuthenticationCookie extends AuthenticationPlugin
             PMA_Util::cacheUnset('is_reload_priv');
             PMA_Util::cacheUnset('db_to_create');
             PMA_Util::cacheUnset('dbs_where_create_table_allowed');
+            PMA_Util::cacheUnset('dbs_to_test');
             $GLOBALS['no_activity'] = true;
             $this->authFails();
             if (! defined('TESTSUITE')) {
@@ -562,6 +568,16 @@ class AuthenticationCookie extends AuthenticationPlugin
         } else {
             $_SESSION['last_access_time'] = time();
         }
+    }
+
+    /**
+     * Stores user credentials after successful login.
+     *
+     * @return void
+     */
+    public function storeUserCredentials()
+    {
+        global $cfg;
 
         $this->createIV();
 
@@ -593,15 +609,12 @@ class AuthenticationCookie extends AuthenticationPlugin
             // URL where to go:
             $redirect_url = $cfg['PmaAbsoluteUri'] . 'index.php';
 
-            /** @var PMA_String $pmaString */
-            $pmaString = $GLOBALS['PMA_String'];
-
             // any parameters to pass?
             $url_params = array();
-            if ($pmaString->strlen($GLOBALS['db'])) {
+            if (/*overload*/mb_strlen($GLOBALS['db'])) {
                 $url_params['db'] = $GLOBALS['db'];
             }
-            if ($pmaString->strlen($GLOBALS['table'])) {
+            if (/*overload*/mb_strlen($GLOBALS['table'])) {
                 $url_params['table'] = $GLOBALS['table'];
             }
             // any target to pass?
@@ -680,7 +693,7 @@ class AuthenticationCookie extends AuthenticationPlugin
      * and the login form
      *
      * this function MUST exit/quit the application,
-     * currently doen by call to auth()
+     * currently done by call to auth()
      *
      * @return void
      */
@@ -723,14 +736,33 @@ class AuthenticationCookie extends AuthenticationPlugin
     private function _getSessionEncryptionSecret()
     {
         if (empty($_SESSION['encryption_key'])) {
-            $_SESSION['encryption_key'] = crypt_random_string(256);
+            if ($this->_useOpenSSL()) {
+                $_SESSION['encryption_key'] = openssl_random_pseudo_bytes(256);
+            } else {
+                $_SESSION['encryption_key'] = crypt_random_string(256);
+            }
         }
         return $_SESSION['encryption_key'];
     }
 
     /**
-     * Encryption using phpseclib's AES
-     * (it uses mcrypt when it is available)
+     * Checks whether we should use openssl for encryption.
+     *
+     * @return boolean
+     */
+    private function _useOpenSSL()
+    {
+        return (
+            function_exists('openssl_encrypt')
+            && function_exists('openssl_decrypt')
+            && function_exists('openssl_random_pseudo_bytes')
+            && PHP_VERSION_ID >= 50304
+        );
+    }
+
+    /**
+     * Encryption using openssl's AES or phpseclib's AES
+     * (phpseclib uses mcrypt when it is available)
      *
      * @param string $data   original data
      * @param string $secret the secret
@@ -739,15 +771,25 @@ class AuthenticationCookie extends AuthenticationPlugin
      */
     public function cookieEncrypt($data, $secret)
     {
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
-        $cipher->setIV($this->_cookie_iv);
-        $cipher->setKey($secret);
-        return base64_encode($cipher->encrypt($data));
+        if ($this->_useOpenSSL()) {
+            return openssl_encrypt(
+                $data,
+                'AES-128-CBC',
+                $secret,
+                0,
+                $this->_cookie_iv
+            );
+        } else {
+            $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+            $cipher->setIV($this->_cookie_iv);
+            $cipher->setKey($secret);
+            return base64_encode($cipher->encrypt($data));
+        }
     }
 
     /**
-     * Decryption using phpseclib's AES
-     * (it uses mcrypt when it is available)
+     * Decryption using openssl's AES or phpseclib's AES
+     * (phpseclib uses mcrypt when it is available)
      *
      * @param string $encdata encrypted data
      * @param string $secret  the secret
@@ -759,11 +801,38 @@ class AuthenticationCookie extends AuthenticationPlugin
         if (is_null($this->_cookie_iv)) {
             $this->_cookie_iv = base64_decode($_COOKIE['pma_iv'], true);
         }
+        if (strlen($this->_cookie_iv) < $this->getIVSize()) {
+                $this->createIV();
+        }
 
+        if ($this->_useOpenSSL()) {
+            return openssl_decrypt(
+                $encdata,
+                'AES-128-CBC',
+                $secret,
+                0,
+                $this->_cookie_iv
+            );
+        } else {
+            $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+            $cipher->setIV($this->_cookie_iv);
+            $cipher->setKey($secret);
+            return $cipher->decrypt(base64_decode($encdata));
+        }
+    }
+
+    /**
+     * Returns size of IV for encryption.
+     *
+     * @return int
+     */
+    public function getIVSize()
+    {
+        if ($this->_useOpenSSL()) {
+            return openssl_cipher_iv_length('AES-128-CBC');
+        }
         $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
-        $cipher->setIV($this->_cookie_iv);
-        $cipher->setKey($secret);
-        return $cipher->decrypt(base64_decode($encdata));
+        return $cipher->block_size;
     }
 
     /**
@@ -776,8 +845,15 @@ class AuthenticationCookie extends AuthenticationPlugin
      */
     public function createIV()
     {
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
-        $this->_cookie_iv = crypt_random_string($cipher->block_size);
+        if ($this->_useOpenSSL()) {
+            $this->_cookie_iv = openssl_random_pseudo_bytes(
+                $this->getIVSize()
+            );
+        } else {
+            $this->_cookie_iv = crypt_random_string(
+                $this->getIVSize()
+            );
+        }
         $GLOBALS['PMA_Config']->setCookie(
             'pma_iv',
             base64_encode($this->_cookie_iv)

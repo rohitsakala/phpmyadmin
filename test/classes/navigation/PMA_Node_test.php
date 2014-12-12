@@ -367,7 +367,7 @@ class Node_Test extends PHPUnit_Framework_TestCase
         $expectedSql .= "ORDER BY SCHEMA_NAME ASC";
 
         // It would have been better to mock _getWhereClause method
-        // but stangely, mocking private methods is not supported in PHPUnit
+        // but strangely, mocking private methods is not supported in PHPUnit
         $node = PMA_NodeFactory::getInstance();
 
         $dbi = $this->getMockBuilder('PMA_DatabaseInterface')
@@ -405,7 +405,7 @@ class Node_Test extends PHPUnit_Framework_TestCase
         $expectedSql .= "LIMIT $pos, $limit";
 
         // It would have been better to mock _getWhereClause method
-        // but stangely, mocking private methods is not supported in PHPUnit
+        // but strangely, mocking private methods is not supported in PHPUnit
         $node = PMA_NodeFactory::getInstance();
 
         $dbi = $this->getMockBuilder('PMA_DatabaseInterface')
@@ -433,6 +433,7 @@ class Node_Test extends PHPUnit_Framework_TestCase
             $GLOBALS['cfg'] = array();
         }
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        $GLOBALS['dbs_to_test'] = false;
         $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
         $GLOBALS['cfg']['FirstLevelNavigationItems'] = $limit;
         $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '_';
@@ -549,6 +550,7 @@ class Node_Test extends PHPUnit_Framework_TestCase
     public function testGetPresenceWithDisabledIS()
     {
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        $GLOBALS['dbs_to_test'] = false;
         $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
 
         $node = PMA_NodeFactory::getInstance();

@@ -45,19 +45,4 @@ $err_url   = $cfg['DefaultTabTable'] . PMA_URL_getCommon($url_params);
  */
 require_once './libraries/db_table_exists.lib.php';
 
-if (PMA_Tracker::isActive()
-    && PMA_Tracker::isTracked($GLOBALS["db"], $GLOBALS["table"])
-    && ! isset($_REQUEST['submit_deactivate_now'])
-) {
-    $temp_msg = '<a href="tbl_tracking.php' . $url_query . '">';
-    $temp_msg .= sprintf(
-        __('Tracking of %s is activated.'),
-        htmlspecialchars($GLOBALS["db"] . '.' . $GLOBALS["table"])
-    );
-    $temp_msg .= '</a>';
-
-    $msg = PMA_Message::notice($temp_msg);
-    $msg->display();
-}
-
 ?>

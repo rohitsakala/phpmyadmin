@@ -56,6 +56,19 @@ if (! empty($_REQUEST['target'])
 if (isset($_REQUEST['ajax_request']) && ! empty($_REQUEST['access_time'])) {
     exit;
 }
+
+// See FAQ 1.34
+if (! empty($_REQUEST['db'])) {
+    $page = null;
+    if (! empty($_REQUEST['table'])) {
+        $page = $GLOBALS['cfg']['DefaultTabTable'];
+    } else {
+        $page = $GLOBALS['cfg']['DefaultTabDatabase'];
+    }
+    include $page;
+    exit;
+}
+
 /**
  * Check if it is an ajax request to reload the recent tables list.
  */
@@ -522,11 +535,11 @@ if ($server > 0) {
             . '%sFind out why%s. '
         );
         if ($cfg['ZeroConf'] == true) {
-            $msg_text .= __(
-                '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-                . 'Or alternately go to \'Operations\' tab of any database '
-                . 'to set it up there.'
-            );
+            $msg_text .= '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' .
+                __(
+                    'Or alternately go to \'Operations\' tab of any database '
+                    . 'to set it up there.'
+                );
         }
         $msg = PMA_Message::notice($msg_text);
         $msg->addParam(
@@ -561,8 +574,8 @@ if (isset($GLOBALS['dbi'])
 
     $_client_info = $GLOBALS['dbi']->getClientInfo();
     if ($server > 0
-        && $pmaString->strpos($_client_info, 'mysqlnd') === false
-        && $pmaString->substr(PMA_MYSQL_CLIENT_API, 0, 3) != $pmaString->substr(
+        && /*overload*/mb_strpos($_client_info, 'mysqlnd') === false
+        && substr(PMA_MYSQL_CLIENT_API, 0, 3) != substr(
             PMA_MYSQL_INT_VERSION, 0, 3
         )
     ) {
@@ -571,10 +584,10 @@ if (isset($GLOBALS['dbi'])
                 sprintf(
                     __('Your PHP MySQL library version %s differs from your MySQL server version %s. This may cause unpredictable behavior.'),
                     $_client_info,
-                    $pmaString->substr(
+                    substr(
                         PMA_MYSQL_STR_VERSION,
                         0,
-                        $pmaString->strpos(PMA_MYSQL_STR_VERSION . '-', '-')
+                        strpos(PMA_MYSQL_STR_VERSION . '-', '-')
                     )
                 )
             ),

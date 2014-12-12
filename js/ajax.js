@@ -38,7 +38,7 @@ var AJAX = {
      * Given the filename of a script, returns a hash to be
      * used to refer to all the events registered for the file
      *
-     * @param string key The filename for which to get the event name
+     * @param key string key The filename for which to get the event name
      *
      * @return int
      */
@@ -59,8 +59,8 @@ var AJAX = {
     /**
      * Registers an onload event for a file
      *
-     * @param string   file The filename for which to register the event
-     * @param function func The function to execute when the page is ready
+     * @param file string   file The filename for which to register the event
+     * @param func function func The function to execute when the page is ready
      *
      * @return self For chaining
      */
@@ -384,6 +384,9 @@ var AJAX = {
                 if(data._errSubmitMsg){
                     msg = data._errSubmitMsg;
                 }
+                if (data._debug) {
+                    $('#session_debug').replaceWith(data._debug);
+                }
                 if (data._errors) {
                     $('<div/>', {id : 'pma_errors'})
                         .insertAfter('#selflink')
@@ -406,7 +409,7 @@ var AJAX = {
                     } else if (data._promptPhpErrors) {
                         // otherwise just prompt user if it is set so.
                         msg = msg + PMA_messages.phpErrorsFound;
-                        // scroll to bottom where all the erros are displayed.
+                        // scroll to bottom where all the errors are displayed.
                         $('html, body').animate({scrollTop:$(document).height()}, 'slow');
                     }
                 }
@@ -441,6 +444,10 @@ var AJAX = {
             if (parseInt(data.redirect_flag) == 1) {
                 // add one more GET param to display session expiry msg
                 window.location.href += '&session_expired=1';
+                window.location.reload();
+            } else if (parseInt(data.reload_flag) == 1) {
+                // remove the token param and reload
+                window.location.href = window.location.href.replace(/&?token=[^&#]*/g, "");
                 window.location.reload();
             }
             if (data.fieldWithError) {
@@ -568,8 +575,8 @@ var AJAX = {
              * Re-attach a generic event handler to clicks
              * on pages and submissions of forms
              */
-            $('a').die('click').live('click', AJAX.requestHandler);
-            $('form').die('submit').live('submit', AJAX.requestHandler);
+            $(document).off('click', 'a').on('click', 'a', AJAX.requestHandler);
+            $(document).off('submit', 'form').on('submit', 'form', AJAX.requestHandler);
             AJAX.cache.update();
             callback();
         }
@@ -652,7 +659,7 @@ AJAX.cache = {
      * Saves a new page in the cache
      *
      * @param string hash    The hash part of the url that is being loaded
-     * @param array  scripts A list of scripts that is requured for the page
+     * @param array  scripts A list of scripts that is required for the page
      * @param string menu    A hash that links to a menu stored
      *                       in a dedicated menu cache
      * @param array  params  A list of parameters used by PMA_commonParams()
@@ -872,7 +879,7 @@ AJAX.setUrlHash = (function (jQuery, window) {
 
     // Fix favicon disappearing in Firefox when setting location.hash
     function resetFavicon() {
-        if (jQuery.browser.mozilla) {
+        if (navigator.userAgent.indexOf('Firefox') > -1) {
             // Move the link tags for the favicon to the bottom
             // of the head element to force a reload of the favicon
             $('head > link[href=favicon\\.ico]').appendTo('head');
@@ -987,8 +994,8 @@ $(function () {
  * Attach a generic event handler to clicks
  * on pages and submissions of forms
  */
-$('a').live('click', AJAX.requestHandler);
-$('form').live('submit', AJAX.requestHandler);
+$(document).on('click', 'a', AJAX.requestHandler);
+$(document).on('submit', 'form', AJAX.requestHandler);
 
 /**
  * Gracefully handle fatal server errors

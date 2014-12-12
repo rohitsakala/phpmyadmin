@@ -52,7 +52,7 @@ var ErrorReport = {
     /**
      * Shows the modal dialog previewing the report
      *
-     * @param object error report info
+     * @param exception object error report info
      *
      * @return void
      */
@@ -151,7 +151,11 @@ var ErrorReport = {
      *
      * @return void
      */
-    _removeErrorNotification: function () {
+    _removeErrorNotification: function (e) {
+        if (e) {
+            // don't remove the hash fragment by navigating to #
+            e.preventDefault();
+        }
         $("#error_notification").fadeOut(function () {
             $(this).remove();
         });
@@ -218,7 +222,7 @@ var ErrorReport = {
     /**
      * Returns the report data to send to the server
      *
-     * @param object exception info
+     * @param exception object exception info
      *
      * @return object
      */
@@ -256,7 +260,7 @@ var ErrorReport = {
     /**
      * Wraps given function in error reporting code and returns wrapped function
      *
-     * @param function function to be wrapped
+     * @param func function to be wrapped
      *
      * @return function
      */

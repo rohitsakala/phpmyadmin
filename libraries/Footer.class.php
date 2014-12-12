@@ -89,7 +89,7 @@ class PMA_Footer
      *
      * @return string
      */
-    private function _getDebugMessage()
+    public function getDebugMessage()
     {
         $retval = '';
         if (! empty($_SESSION['debug'])) {
@@ -203,12 +203,11 @@ class PMA_Footer
      */
     public function getErrorMessages()
     {
-        $retval = '';
+        $retval = '<div class="clearfloat" id="pma_errors">';
         if ($GLOBALS['error_handler']->hasDisplayErrors()) {
-            $retval .= '<div class="clearfloat" id="pma_errors">';
             $retval .= $GLOBALS['error_handler']->getDispErrors();
-            $retval .= '</div>';
         }
+        $retval .= '</div>';
 
         /**
          * Report php errors
@@ -324,7 +323,7 @@ class PMA_Footer
                     $url = $this->getSelfUrl();
                     $retval .= $this->_getSelfLink($url);
                 }
-                $retval .= $this->_getDebugMessage();
+                $retval .= $this->getDebugMessage();
                 $retval .= $this->getErrorMessages();
                 $retval .= $this->_scripts->getDisplay();
                 if ($GLOBALS['cfg']['DBG']['demo']) {

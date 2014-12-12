@@ -126,7 +126,7 @@ class PMA_TableSearch
         $columns = $GLOBALS['dbi']->getColumns(
             $this->_db, $this->_table, null, true
         );
-        // Get details about the geometry fucntions
+        // Get details about the geometry functions
         $geom_types = PMA_Util::getGISDatatypes();
 
         foreach ($columns as $row) {
@@ -151,7 +151,7 @@ class PMA_TableSearch
                 }
                 $type = preg_replace('@ZEROFILL@i', '', $type);
                 $type = preg_replace('@UNSIGNED@i', '', $type);
-                $type = $GLOBALS['PMA_String']->strtolower($type);
+                $type = /*overload*/mb_strtolower($type);
             }
             if (empty($type)) {
                 $type = '&nbsp;';
@@ -287,7 +287,9 @@ class PMA_TableSearch
 
             $html_output .= '<a class="ajax browse_foreign" href="'
                 . 'browse_foreigners.php'
-                . PMA_URL_getCommon(array('db' => $this->_db, 'table' => $this->_table))
+                . PMA_URL_getCommon(
+                    array('db' => $this->_db, 'table' => $this->_table)
+                )
                 . '&amp;field=' . urlencode($column_name) . '&amp;fieldkey='
                 . $column_index . '&amp;fromsearch=1"';
             $html_output .= '>' . str_replace("'", "\'", $titles['Browse']) . '</a>';
@@ -314,7 +316,7 @@ class PMA_TableSearch
         $html_output = '';
         $value = explode(
             ', ',
-            str_replace("'", '', $GLOBALS['PMA_String']->substr($column_type, 5, -1))
+            str_replace("'", '', /*overload*/mb_substr($column_type, 5, -1))
         );
         $cnt_value = count($value);
 
@@ -404,16 +406,13 @@ class PMA_TableSearch
             // other cases
             $the_class = 'textfield';
 
-            /** @var PMA_String $pmaString */
-            $pmaString = $GLOBALS['PMA_String'];
-
             if ($column_type == 'date') {
                 $the_class .= ' datefield';
             } elseif ($column_type == 'datetime'
-                || $pmaString->substr($column_type, 0, 9) == 'timestamp'
+                || substr($column_type, 0, 9) == 'timestamp'
             ) {
                 $the_class .= ' datetimefield';
-            } elseif ($pmaString->substr($column_type, 0, 3) == 'bit') {
+            } elseif (substr($column_type, 0, 3) == 'bit') {
                 $the_class .= ' bit';
             }
 
@@ -560,7 +559,7 @@ class PMA_TableSearch
             // strings to numbers and numbers to strings as necessary
             // during the comparison
             if (preg_match('@char|binary|blob|text|set|date|time|year@i', $types)
-                || $GLOBALS['PMA_String']->strpos(' ' . $func_type, 'LIKE')
+                || /*overload*/mb_strpos(' ' . $func_type, 'LIKE')
             ) {
                 $quot = '\'';
             } else {
@@ -909,13 +908,13 @@ class PMA_TableSearch
     }
 
     /**
-     * Provides a column's type, collation, operators list, and crietria value
+     * Provides a column's type, collation, operators list, and criteria value
      * to display in table search form
      *
      * @param integer $search_index Row number in table search form
      * @param integer $column_index Column index in ColumnNames array
      *
-     * @return array Array contaning column's properties
+     * @return array Array containing column's properties
      */
     public function getColumnProperties($search_index, $column_index)
     {
@@ -1153,7 +1152,7 @@ class PMA_TableSearch
 
         $html_output .= '<form method="post" action="' . $scriptName . '" '
             . 'name="insertForm" id="' . $formId . '" '
-            . 'class="ajax lock-page"' . '>';
+            . 'class="ajax"' . '>';
 
         $html_output .= PMA_URL_getHiddenInputs($this->_db, $this->_table);
         $html_output .= '<input type="hidden" name="goto" value="' . $goto . '" />';
@@ -1238,7 +1237,7 @@ class PMA_TableSearch
             . ($this->_searchType == 'zoom' ? '" id="inputFormSubmitId"' : '" ')
             . 'value="' . __('Go') . '" />';
         $html_output .= '</fieldset></form>';
-        $html_output .= '<div id="sqlqueryresults"></div>';
+        $html_output .= '<div id="sqlqueryresultsouter"></div>';
         return $html_output;
     }
 
@@ -1370,7 +1369,8 @@ class PMA_TableSearch
                 'useRegex',
                 __('Use regular expression'),
                 false,
-                false
+                false,
+                'useRegex'
             );
         return $htmlOutput;
     }
@@ -1383,7 +1383,7 @@ class PMA_TableSearch
      * @param string $replaceWith string to replace with
      * @param string $charSet     character set of the connection
      *
-     * @return array Array containing original values, replcaed values and count
+     * @return array Array containing original values, replaced values and count
      */
     function _getRegexReplaceRows($columnIndex, $find, $replaceWith, $charSet)
     {

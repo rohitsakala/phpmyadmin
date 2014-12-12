@@ -158,14 +158,14 @@ class PMA_Header
         if (isset($GLOBALS['db'])) {
             $params['db'] = $GLOBALS['db'];
         }
-        $this->_scripts->addFile('jquery/jquery-1.8.3.min.js');
+        $this->_scripts->addFile('jquery/jquery-1.11.1.min.js');
         $this->_scripts->addFile(
             'whitelist.php' . PMA_URL_getCommon($params), false, true
         );
         $this->_scripts->addFile('sprintf.js');
         $this->_scripts->addFile('ajax.js');
         $this->_scripts->addFile('keyhandler.js');
-        $this->_scripts->addFile('jquery/jquery-ui-1.9.2.custom.min.js');
+        $this->_scripts->addFile('jquery/jquery-ui-1.11.2.min.js');
         $this->_scripts->addFile('jquery/jquery.cookie.js');
         $this->_scripts->addFile('jquery/jquery.mousewheel.js');
         $this->_scripts->addFile('jquery/jquery.event.drag-2.2.js');
@@ -391,6 +391,9 @@ class PMA_Header
                     $this->_scripts->addFile('config.js');
                 }
                 $retval .= $this->_scripts->getDisplay();
+                $retval .= '<noscript>';
+                $retval .= '<style>html{display:block}</style>';
+                $retval .= '</noscript>';
                 $retval .= $this->_getBodyStart();
                 if ($this->_menuEnabled && $GLOBALS['server'] > 0) {
                     $nav = new PMA_Navigation();
@@ -564,12 +567,10 @@ class PMA_Header
         $lang = $GLOBALS['available_languages'][$GLOBALS['lang']][1];
         $dir  = $GLOBALS['text_dir'];
 
-        /** @var PMA_String $pmaString */
-        $pmaString = $GLOBALS['PMA_String'];
         $retval  = "<!DOCTYPE HTML>";
         $retval .= "<html lang='$lang' dir='$dir' class='";
-        $retval .= $pmaString->strtolower(PMA_USR_BROWSER_AGENT) . " ";
-        $retval .= $pmaString->strtolower(PMA_USR_BROWSER_AGENT)
+        $retval .= /*overload*/mb_strtolower(PMA_USR_BROWSER_AGENT) . " ";
+        $retval .= /*overload*/mb_strtolower(PMA_USR_BROWSER_AGENT)
             . intval(PMA_USR_BROWSER_VER) . "'>";
 
         return $retval;
@@ -615,7 +616,7 @@ class PMA_Header
             // load jQuery's CSS prior to our theme's CSS, to let the theme
             // override jQuery's CSS
             $retval .= '<link rel="stylesheet" type="text/css" href="'
-                . $theme_path . '/jquery/jquery-ui-1.9.2.custom.css" />';
+                . $theme_path . '/jquery/jquery-ui-1.11.2.css" />';
             $retval .= '<link rel="stylesheet" type="text/css" href="'
                 . $basedir . 'phpmyadmin.css.php'
                 . $common_url . '&amp;nocache='
@@ -713,15 +714,13 @@ class PMA_Header
     {
         $retval = '';
         if ($this->_menuEnabled
-            && $GLOBALS['PMA_String']->strlen($table)
+            && /*overload*/mb_strlen($table)
             && $GLOBALS['cfg']['NumRecentTables'] > 0
         ) {
-            $tmp_result = PMA_RecentFavoriteTable::getInstance('recent')->add($db, $table);
+            $tmp_result = PMA_RecentFavoriteTable::getInstance('recent')
+                              ->add($db, $table);
             if ($tmp_result === true) {
-                $params  = array('ajax_request' => true, 'recent_table' => true);
-                $url     = 'index.php' . PMA_URL_getCommon($params);
-                $retval  = '<a class="hide" id="update_recent_tables"';
-                $retval .= ' href="' . $url . '"></a>';
+                $retval = PMA_RecentFavoriteTable::getHtmlUpdateRecentTables();
             } else {
                 $error  = $tmp_result;
                 $retval = $error->getDisplay();

@@ -1200,7 +1200,7 @@ class PMA_ServerPrivileges_Test extends PHPUnit_Framework_TestCase
         $item = PMA_Util::getCheckbox(
             'createdb-2',
             __('Grant all privileges on wildcard name (username\\_%).'),
-            false, false
+            false, false, 'createdb-2'
         );
         $this->assertContains(
             $item,
@@ -1962,7 +1962,7 @@ class PMA_ServerPrivileges_Test extends PHPUnit_Framework_TestCase
             $html
         );
 
-        //PMA_URL_getCommone
+        //PMA_URL_getCommon
         $item = PMA_URL_getCommon(
             array(
                 'username' => $username,

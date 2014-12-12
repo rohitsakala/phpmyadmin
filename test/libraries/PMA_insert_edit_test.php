@@ -217,6 +217,7 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
             ->setMethods(array('addHtml'))
             ->getMock();
 
+        $restoreInstance = PMA_Response::getInstance();
         $response = new ReflectionProperty('PMA_Response', '_instance');
         $response->setAccessible(true);
         $response->setValue($responseMock);
@@ -224,6 +225,8 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
         $result = PMA_showEmptyResultMessageOrSetUniqueCondition(
             array(false), 0, array('1'), 'SELECT', array('1' => 'result1')
         );
+
+        $response->setValue($restoreInstance);
 
         $this->assertFalse($result);
     }
@@ -1609,14 +1612,14 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test for PMA_getSumbitAndResetButtonForActionsPanel
+     * Test for PMA_getSubmitAndResetButtonForActionsPanel
      *
      * @return void
      */
-    public function testGetSumbitAndResetButtonForActionsPanel()
+    public function testGetSubmitAndResetButtonForActionsPanel()
     {
         $GLOBALS['cfg']['ShowHint'] = false;
-        $result = PMA_getSumbitAndResetButtonForActionsPanel(1, 0);
+        $result = PMA_getSubmitAndResetButtonForActionsPanel(1, 0);
 
         $this->assertTag(
             PMA_getTagArray(
@@ -1926,11 +1929,14 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
             ->method('getHeader')
             ->will($this->returnValue($headerMock));
 
+        $restoreInstance = PMA_Response::getInstance();
         $response = new ReflectionProperty('PMA_Response', '_instance');
         $response->setAccessible(true);
         $response->setValue($responseMock);
 
         PMA_isInsertRow();
+
+        $response->setValue($restoreInstance);
 
         $this->assertEquals(5, $GLOBALS['cfg']['InsertRows']);
     }
@@ -2655,34 +2661,43 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
             ->will($this->returnValue(array($meta)));
 
         $dbi->expects($this->at(2))
-            ->method('fetchValue')
+            ->method('fetchRow')
             ->will($this->returnValue(false));
 
         $dbi->expects($this->at(3))
+            ->method('freeResult');
+
+        $dbi->expects($this->at(4))
             ->method('tryQuery')
             ->with('SELECT `table`.`a` FROM `db`.`table` WHERE 1');
 
         $meta->type = 'int';
-        $dbi->expects($this->at(4))
+        $dbi->expects($this->at(5))
             ->method('getFieldsMeta')
             ->will($this->returnValue(array($meta)));
 
-        $dbi->expects($this->at(5))
-            ->method('fetchValue')
-            ->will($this->returnValue('123'));
-
         $dbi->expects($this->at(6))
+            ->method('fetchRow')
+            ->will($this->returnValue(array(0 => '123')));
+
+        $dbi->expects($this->at(7))
+            ->method('freeResult');
+
+        $dbi->expects($this->at(8))
             ->method('tryQuery')
             ->with('SELECT `table`.`a` FROM `db`.`table` WHERE 1');
 
         $meta->type = 'timestamp';
-        $dbi->expects($this->at(7))
+        $dbi->expects($this->at(9))
             ->method('getFieldsMeta')
             ->will($this->returnValue(array($meta)));
 
-        $dbi->expects($this->at(8))
-            ->method('fetchValue')
-            ->will($this->returnValue('2013-08-28 06:34:14'));
+        $dbi->expects($this->at(10))
+            ->method('fetchRow')
+            ->will($this->returnValue(array(0 => '2013-08-28 06:34:14')));
+
+        $dbi->expects($this->at(11))
+            ->method('freeResult');
 
         $GLOBALS['dbi'] = $dbi;
 
@@ -2765,6 +2780,7 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
             ->setMethods(array('addHtml'))
             ->getMock();
 
+        $restoreInstance = PMA_Response::getInstance();
         $response = new ReflectionProperty('PMA_Response', '_instance');
         $response->setAccessible(true);
         $response->setValue($responseMock);
@@ -2791,6 +2807,8 @@ class PMA_InsertEditTest extends PHPUnit_Framework_TestCase
         $_REQUEST['default_action'] = '';
 
         $result = PMA_determineInsertOrEdit(null, 'db', 'table');
+
+        $response->setValue($restoreInstance);
 
         $this->assertEquals(
             array(

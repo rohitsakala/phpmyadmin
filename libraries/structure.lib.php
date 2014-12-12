@@ -338,7 +338,9 @@ function PMA_getHtmlForCheckAllTables($pmaThemeImage, $text_dir,
             . __('Replace table prefix') . '</option>' . "\n";
         $html_output .= '<option value="copy_tbl_change_prefix" >'
             . __('Copy table with prefix') . '</option>' . "\n";
-        if ($GLOBALS['cfgRelation']['central_columnswork']) {
+        if (isset($GLOBALS['cfgRelation']['central_columnswork'])
+            && $GLOBALS['cfgRelation']['central_columnswork']
+        ) {
             $html_output .= '<option value="sync_unique_columns_central_list" >'
                 . __('Add columns to central list') . '</option>' . "\n";
             $html_output .= '<option value="delete_unique_columns_central_list" >'
@@ -452,7 +454,7 @@ function PMA_getTimeForCreateUpdateCheck($current_table, $time_label, $time_all)
  * @param boolean $db_is_system_schema   whether db is information schema or not
  * @param array   $titles                titles array
  * @param string  $empty_table           empty table action link
- * @param string  $drop_query            table dropt query
+ * @param string  $drop_query            table drop query
  * @param string  $drop_message          table drop message
  * @param string  $collation             collation
  * @param string  $formatted_size        formatted size
@@ -591,7 +593,7 @@ function PMA_getHtmlForInsertEmptyDropActionLinks($tbl_url_query, $table_is_view
 /**
  * Get HTML for show stats
  *
- * @param string $tbl_url_query  tabel url query
+ * @param string $tbl_url_query  table url query
  * @param string $formatted_size formatted size
  * @param string $unit           unit
  * @param string $overhead       overhead
@@ -653,7 +655,7 @@ function PMA_getHtmlForStructureTimes($create_time, $update_time, $check_time)
  * @param boolean $table_is_view  whether table is view
  * @param array   $current_table  current table
  * @param string  $collation      collation
- * @param boolean $is_show_stats  whether atats show or not
+ * @param boolean $is_show_stats  whether stats show or not
  * @param string  $tbl_url_query  table url query
  * @param string  $formatted_size formatted size
  * @param string  $unit           unit
@@ -733,7 +735,7 @@ function PMA_getHtmlForNotNullEngineViewTable($table_is_view, $current_table,
                 : ($table_is_view ? __('View') : '')
             )
             . '</td>';
-        if ($GLOBALS['PMA_String']->strlen($collation)) {
+        if (/*overload*/mb_strlen($collation)) {
             $html_output .= '<td class="nowrap">' . $collation . '</td>';
         }
     }
@@ -1020,25 +1022,29 @@ function PMA_getServerSlaveStatus($server_slave_status, $truename)
     $do = false;
     include_once 'libraries/replication.inc.php';
 
-    /** @var PMA_String $pmaString */
-    $pmaString = $GLOBALS['PMA_String'];
-
     if (!$server_slave_status) {
         return array($do, $ignored);
     }
 
-    $nbServerSlaveDoDb = count($server_slave_Do_DB);
-    $nbServerSlaveIgnoreDb = count($server_slave_Ignore_DB);
-    if (($pmaString->strlen(array_search($truename, $server_slave_Do_Table)) > 0)
-        || $pmaString->strlen(array_search($GLOBALS['db'], $server_slave_Do_DB)) > 0
-        || ($nbServerSlaveDoDb == 1 && $nbServerSlaveIgnoreDb == 1)
+    $nbServSlaveDoDb = count($GLOBALS['replication_info']['slave']['Do_DB']);
+    $nbServSlaveIgnoreDb
+        = count($GLOBALS['replication_info']['slave']['Ignore_DB']);
+    $searchDoDBInTruename = array_search(
+        $truename, $GLOBALS['replication_info']['slave']['Do_DB']
+    );
+    $searchDoDBInDB = array_search(
+        $GLOBALS['db'], $GLOBALS['replication_info']['slave']['Do_DB']
+    );
+    if (strlen($searchDoDBInTruename) > 0
+        || strlen($searchDoDBInDB) > 0
+        || ($nbServSlaveDoDb == 1 && $nbServSlaveIgnoreDb == 1)
     ) {
         $do = true;
     }
-    foreach ($server_slave_Wild_Do_Table as $db_table) {
+    foreach ($GLOBALS['replication_info']['slave']['Wild_Do_Table'] as $db_table) {
         $table_part = PMA_extractDbOrTable($db_table, 'table');
         $pattern = "@^"
-            . $pmaString->substr($table_part, 0, $pmaString->strlen($table_part) - 1)
+            . /*overload*/mb_substr($table_part, 0, -1)
             . "@";
         if (($GLOBALS['db'] == PMA_extractDbOrTable($db_table, 'db'))
             && (preg_match($pattern, $truename))
@@ -1047,18 +1053,23 @@ function PMA_getServerSlaveStatus($server_slave_status, $truename)
         }
     }
 
-    $search = array_search($GLOBALS['db'], $server_slave_Ignore_DB);
-    if (($pmaString->strlen(array_search($truename, $server_slave_Ignore_Table)) > 0)
-        || $pmaString->strlen($search) > 0
-    ) {
+    $searchDb = array_search(
+        $GLOBALS['db'],
+        $GLOBALS['replication_info']['slave']['Ignore_DB']
+    );
+    $searchTable = array_search(
+        $truename,
+        $GLOBALS['replication_info']['slave']['Ignore_Table']
+    );
+    if ((strlen($searchTable) > 0) || strlen($searchDb) > 0) {
         $ignored = true;
     }
-    foreach ($server_slave_Wild_Ignore_Table as $db_table) {
+    foreach ($GLOBALS['replication_info']['slave']['Wild_Ignore_Table'] as $db_table) {
         $table_part = PMA_extractDbOrTable($db_table, 'table');
         $pattern = "@^"
-            . $pmaString->substr($table_part, 0, $pmaString->strlen($table_part) - 1)
+            . /*overload*/mb_substr($table_part, 0, -1)
             . "@";
-        if (($db == PMA_extractDbOrTable($db_table))
+        if (($GLOBALS['db'] == PMA_extractDbOrTable($db_table))
             && (preg_match($pattern, $truename))
         ) {
             $ignored = true;
@@ -1077,7 +1088,7 @@ function PMA_getServerSlaveStatus($server_slave_status, $truename)
  * @param boolean $db_is_system_schema whether db is information schema or not
  * @param boolean $is_show_stats       whether stats show or not
  * @param boolean $table_is_view       whether table is view or not
- * @param double  $sum_size            totle table size
+ * @param double  $sum_size            total table size
  * @param double  $overhead_size       overhead size
  *
  * @return array
@@ -1378,7 +1389,7 @@ function PMA_getHtmlTableStructureRow($row, $rownum,
     $html_output .= '</td>';
 
     $html_output .= '<td class="nowrap">'
-        . $GLOBALS['PMA_String']->strtoupper($row['Extra']) . '</td>';
+        . /*overload*/mb_strtoupper($row['Extra']) . '</td>';
 
     $html_output .= PMA_getHtmlForDropColumn(
         $tbl_is_view, $db_is_system_schema,
@@ -1450,16 +1461,9 @@ function PMA_getHtmlForDropColumn($tbl_is_view, $db_is_system_schema,
 function PMA_getHtmlForCheckAllTableColumn($pmaThemeImage, $text_dir,
     $tbl_is_view, $db_is_system_schema, $tbl_storage_engine
 ) {
-    $html_output = '<img class="selectallarrow" '
-        . 'src="' . $pmaThemeImage . 'arrow_' . $text_dir . '.png" '
-        . 'width="38" height="22" alt="' . __('With selected:') . '" />';
-
-    $html_output .= '<input type="checkbox" id="fieldsForm_checkall" '
-        . 'class="checkall_box" title="' . __('Check All') . '" />'
-        . '<label for="fieldsForm_checkall">' . __('Check All') . '</label>';
-
-    $html_output .= '<i style="margin-left: 2em">'
-        . __('With selected:') . '</i>';
+    $html_output = PMA_Util::getWithSelected(
+        $pmaThemeImage, $text_dir, "fieldsForm"
+    );
 
     $html_output .= PMA_Util::getButtonOrImage(
         'submit_mult', 'mult_submit', 'submit_mult_browse',
@@ -1506,7 +1510,9 @@ function PMA_getHtmlForCheckAllTableColumn($pmaThemeImage, $text_dir,
                 __('Fulltext'), 'b_ftext.png', 'ftext'
             );
         }
-        if ($GLOBALS['cfgRelation']['central_columnswork']) {
+        if (isset($GLOBALS['cfgRelation']['central_columnswork'])
+            && $GLOBALS['cfgRelation']['central_columnswork']
+        ) {
             $html_output .= PMA_Util::getButtonOrImage(
                 'submit_mult', 'mult_submit', 'submit_mult_central_columns_add',
                 __('Add to central columns'), 'centralColumns_add.png',
@@ -1979,17 +1985,14 @@ function PMA_getHtmlForActionRowInStructureTable($type, $tbl_storage_engine,
 function PMA_getHtmlForFullTextAction($tbl_storage_engine, $type, $url_query,
     $row, $titles
 ) {
-    /** @var PMA_String $pmaString */
-    $pmaString = $GLOBALS['PMA_String'];
-
     $html_output = '<li class="fulltext nowrap">';
     if (! empty($tbl_storage_engine)
         && ($tbl_storage_engine == 'MYISAM'
         || $tbl_storage_engine == 'ARIA'
         || $tbl_storage_engine == 'MARIA'
         || ($tbl_storage_engine == 'INNODB' && PMA_MYSQL_INT_VERSION >= 50604))
-        && ($pmaString->strpos($type, 'text') !== false
-        || $pmaString->strpos($type, 'char') !== false)
+        && (/*overload*/mb_strpos($type, 'text') !== false
+        || /*overload*/mb_strpos($type, 'char') !== false)
     ) {
         $html_output .= '<a rel="samepage" href="sql.php' . $url_query
             . '&amp;sql_query='
@@ -2110,7 +2113,9 @@ function PMA_getHtmlForActionsInTableStructure($type, $tbl_storage_engine,
         );
     }
     $html_output .= PMA_getHtmlForDistinctValueAction($url_query, $row, $titles);
-    if ($GLOBALS['cfgRelation']['central_columnswork']) {
+    if (isset($GLOBALS['cfgRelation']['central_columnswork']) 
+        && $GLOBALS['cfgRelation']['central_columnswork']
+    ) {
         $html_output .= '<li class="browse nowrap">';
         if ($isInCentralColumns) {
             $html_output .=
@@ -2135,7 +2140,7 @@ function PMA_getHtmlForActionsInTableStructure($type, $tbl_storage_engine,
         }
         $html_output .= '</li>';
     }
-    $html_output .= '<div class="clearfloat"></div></ul></td>';
+    $html_output .= '</ul></td>';
     return $html_output;
 }
 
@@ -2475,15 +2480,16 @@ function PMA_columnNeedsAlterTable($i)
  */
 function PMA_updateColumns($db, $table)
 {
-    $err_url = 'tbl_structure.php' . PMA_URL_getCommon(array(
-        'db' => $db, 'table' => $table
-    ));
+    $err_url = 'tbl_structure.php' . PMA_URL_getCommon(
+        array(
+            'db' => $db, 'table' => $table
+        )
+    );
     $regenerate = false;
     $field_cnt = count($_REQUEST['field_name']);
     $key_fields = array();
     $changes = array();
     $pmatable = new PMA_Table($table, $db);
-    $pmaString = $GLOBALS['PMA_String'];
 
     for ($i = 0; $i < $field_cnt; $i++) {
         if (PMA_columnNeedsAlterTable($i)) {
@@ -2519,7 +2525,7 @@ function PMA_updateColumns($db, $table)
             // find the remembered sort expression
             $sorted_col = $pmatable->getUiProp(PMA_Table::PROP_SORTED_COLUMN);
             // if the old column name is part of the remembered sort expression
-            if ($pmaString->strpos(
+            if (/*overload*/mb_strpos(
                 $sorted_col,
                 PMA_Util::backquote($_REQUEST['field_orig'][$i])
             ) !== false) {
@@ -2579,7 +2585,9 @@ function PMA_updateColumns($db, $table)
             $response->isSuccess(false);
             $response->addJSON(
                 'message',
-                PMA_Message::rawError(__('Query error') . ':<br />' . $GLOBALS['dbi']->getError())
+                PMA_Message::rawError(
+                    __('Query error') . ':<br />' . $GLOBALS['dbi']->getError()
+                )
             );
             $regenerate = true;
         }
@@ -2606,7 +2614,7 @@ function PMA_updateColumns($db, $table)
     ) {
         foreach ($_REQUEST['field_mimetype'] as $fieldindex => $mimetype) {
             if (isset($_REQUEST['field_name'][$fieldindex])
-                && $GLOBALS['PMA_String']->strlen(
+                && /*overload*/mb_strlen(
                     $_REQUEST['field_name'][$fieldindex]
                 )
             ) {
@@ -2679,7 +2687,7 @@ function PMA_moveColumns($db, $table)
         $changes[] = 'CHANGE ' . PMA_Table::generateAlter(
             $column,
             $column,
-            $GLOBALS['PMA_String']->strtoupper($extracted_columnspec['type']),
+            /*overload*/mb_strtoupper($extracted_columnspec['type']),
             $extracted_columnspec['spec_in_brackets'],
             $extracted_columnspec['attribute'],
             isset($data['Collation']) ? $data['Collation'] : '',

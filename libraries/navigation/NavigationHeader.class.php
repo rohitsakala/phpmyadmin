@@ -11,7 +11,7 @@ if (! defined('PHPMYADMIN')) {
 
 /**
  * This class renders the logo, links, server selection,
- * which are then displayed at the top of the naviagtion panel
+ * which are then displayed at the top of the navigation panel
  *
  * @package PhpMyAdmin-Navigation
  */
@@ -106,15 +106,12 @@ class PMA_NavigationHeader
                 $retval .= '" target="_blank"';
                 break;
             case 'main':
-                /** @var PMA_String $pmaString */
-                $pmaString = $GLOBALS['PMA_String'];
-
                 // do not add our parameters for an external link
-                $navLogoLinkLower = $pmaString->strtolower(
+                $navLogoLinkLower = /*overload*/mb_strtolower(
                     $GLOBALS['cfg']['NavigationLogoLink']
                 );
-                if ($pmaString->substr($navLogoLinkLower, 0, 4) !== '://') {
-                    $retval .= '?' . $GLOBALS['url_query'] . '"';
+                if (/*overload*/mb_substr($navLogoLinkLower, 0, 4) !== '://') {
+                    $retval .= $GLOBALS['url_query'] . '"';
                 } else {
                     $retval .= '" target="_blank"';
                 }

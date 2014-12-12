@@ -225,7 +225,7 @@ class PMA_ServerStatusData
                 )
             );
 
-        if ($GLOBALS['server_master_status']) {
+        if ($GLOBALS['replication_info']['master']['status']) {
             $links['repl'][__('Show slave hosts')]
                 = 'sql.php' . PMA_URL_getCommon(
                     array(
@@ -235,7 +235,7 @@ class PMA_ServerStatusData
                 );
             $links['repl'][__('Show master status')] = '#replication_master';
         }
-        if ($GLOBALS['server_slave_status']) {
+        if ($GLOBALS['replication_info']['slave']['status']) {
             $links['repl'][__('Show slave status')] = '#replication_slave';
         }
 
@@ -281,14 +281,11 @@ class PMA_ServerStatusData
         // Variable to mark used sections
         $categoryUsed = array();
 
-        /** @var PMA_String $pmaString */
-        $pmaString = $GLOBALS['PMA_String'];
-
         // sort vars into arrays
         foreach ($server_status as $name => $value) {
             $section_found = false;
             foreach ($allocations as $filter => $section) {
-                if ($pmaString->strpos($name, $filter) !== false) {
+                if (/*overload*/mb_strpos($name, $filter) !== false) {
                     $allocationMap[$name] = $section;
                     $categoryUsed[$section] = true;
                     $section_found = true;
@@ -319,7 +316,10 @@ class PMA_ServerStatusData
 
         // Set all class properties
         $this->db_isLocal = false;
-        if ($pmaString->strtolower($GLOBALS['cfg']['Server']['host']) === 'localhost'
+        $serverHostToLower = /*overload*/mb_strtolower(
+            $GLOBALS['cfg']['Server']['host']
+        );
+        if ($serverHostToLower === 'localhost'
             || $GLOBALS['cfg']['Server']['host'] === '127.0.0.1'
             || $GLOBALS['cfg']['Server']['host'] === '::1'
         ) {
@@ -399,7 +399,7 @@ class PMA_ServerStatusData
             }
             $retval .= '<li>';
             $retval .= '<a' . $class;
-            $retval .= ' href="' . $item['url'] . '?' . $url_params . '">';
+            $retval .= ' href="' . $item['url'] . $url_params . '">';
             $retval .= $item['name'];
             $retval .= '</a>';
             $retval .= '</li>';

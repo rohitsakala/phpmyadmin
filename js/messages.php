@@ -37,7 +37,10 @@ $js_messages['strDoYouReally'] = __('Do you really want to execute "%s"?');
 $js_messages['strDropDatabaseStrongWarning'] = __('You are about to DESTROY a complete database!');
 $js_messages['strDropTableStrongWarning'] = __('You are about to DESTROY a complete table!');
 $js_messages['strTruncateTableStrongWarning'] = __('You are about to TRUNCATE a complete table!');
-$js_messages['strDeleteTrackingData'] = __('Delete tracking data for this table');
+$js_messages['strDeleteTrackingData'] = __('Delete tracking data for this table?');
+$js_messages['strDeleteTrackingDataMultiple'] = __('Delete tracking data for these tables?');
+$js_messages['strDeleteTrackingVersion'] = __('Delete tracking data for this version?');
+$js_messages['strDeleteTrackingVersionMultiple'] = __('Delete tracking data for these versions?');
 $js_messages['strDeletingTrackingData'] = __('Deleting tracking data');
 $js_messages['strDroppingPrimaryKeyIndex'] = __('Dropping Primary Key/Index');
 $js_messages['strDroppingForeignKey'] = __('Dropping Foreign key.');
@@ -430,6 +433,7 @@ $js_messages['strColVisibHint'] = __(
 $js_messages['strShowAllCol'] = __('Show all');
 $js_messages['strAlertNonUnique'] = __('This table does not contain a unique column. Features related to the grid edit, checkbox, Edit, Copy and Delete links may not work after saving.');
 $js_messages['strEnterValidHex'] = __('Please enter a valid hexadecimal string. Valid characters are 0-9, A-F.');
+$js_messages['strShowAllRowsWarning'] = __('Do you really want to see all of the rows? For a big table this could crash the browser.');
 
 /** Drag & Drop sql import messages */
 $js_messages['dropImportMessageCancel'] = __('cancel');

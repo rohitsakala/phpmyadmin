@@ -401,8 +401,8 @@ class ExportSql extends ExportPlugin
                     ),
                     'both' => __(
                         'both of the above<br /> &nbsp; &nbsp; &nbsp; Example:'
-                        . ' <code>INSERT INTO tbl_name (col_A,col_B) VALUES (1,2,3),'
-                        . ' (4,5,6), (7,8,9)</code>'
+                        . ' <code>INSERT INTO tbl_name (col_A,col_B,col_C) VALUES'
+                        . ' (1,2,3), (4,5,6), (7,8,9)</code>'
                     ),
                     'none' => __(
                         'neither of the above<br /> &nbsp; &nbsp; &nbsp; Example:'
@@ -791,15 +791,12 @@ class ExportSql extends ExportPlugin
         if (PMA_DRIZZLE) {
             $create_query .= ' COLLATE ' . $collation;
         } else {
-            /** @var PMA_String $pmaString */
-            $pmaString = $GLOBALS['PMA_String'];
-
-            if ($pmaString->strpos($collation, '_')) {
+            if (/*overload*/mb_strpos($collation, '_')) {
                 $create_query .= ' DEFAULT CHARACTER SET '
-                    . $pmaString->substr(
+                    . /*overload*/mb_substr(
                         $collation,
                         0,
-                        $pmaString->strpos($collation, '_')
+                        /*overload*/mb_strpos($collation, '_')
                     )
                     . ' COLLATE ' . $collation;
             } else {
@@ -1217,20 +1214,17 @@ class ExportSql extends ExportPlugin
             return $this->_exportComment(__('in use') . '(' . $tmp_error . ')');
         }
 
-        /** @var PMA_String $pmaString */
-        $pmaString = $GLOBALS['PMA_String'];
-
         $warning = '';
         if ($result != false && ($row = $GLOBALS['dbi']->fetchRow($result))) {
             $create_query = $row[1];
             unset($row);
             // Convert end of line chars to one that we want (note that MySQL
             // doesn't return query it will accept in all cases)
-            if ($pmaString->strpos($create_query, "(\r\n ")) {
+            if (/*overload*/mb_strpos($create_query, "(\r\n ")) {
                 $create_query = str_replace("\r\n", $crlf, $create_query);
-            } elseif ($pmaString->strpos($create_query, "(\n ")) {
+            } elseif (/*overload*/mb_strpos($create_query, "(\n ")) {
                 $create_query = str_replace("\n", $crlf, $create_query);
-            } elseif ($pmaString->strpos($create_query, "(\r ")) {
+            } elseif (/*overload*/mb_strpos($create_query, "(\r ")) {
                 $create_query = str_replace("\r", $crlf, $create_query);
             }
 
@@ -1300,29 +1294,11 @@ class ExportSql extends ExportPlugin
                 )) {
                     $has_constraints = 1;
                     // comments -> constraints for dumped tables
-                    if (! isset($sql_constraints)) {
-                        if (isset($GLOBALS['no_constraints_comments'])) {
-                            $sql_constraints = '';
-                        } else {
-                            $sql_constraints = $crlf
-                                . $this->_exportComment()
-                                . $this->_exportComment(
-                                    __('Constraints for dumped tables')
-                                )
-                                . $this->_exportComment();
-                        }
-                    }
-                        // comments for current table
-                    if (! isset($GLOBALS['no_constraints_comments'])) {
-                        $sql_constraints .= $crlf
-                        . $this->_exportComment()
-                        . $this->_exportComment(
-                            __('Constraints for table')
-                            . ' '
-                            . PMA_Util::backquoteCompat($table_alias, $compat)
-                        )
-                        . $this->_exportComment();
-                    }
+                    $sql_constraints = $this->generateComment(
+                        $crlf, $sql_constraints, __('Constraints for dumped tables'),
+                        __('Constraints for table'), $table_alias, $compat
+                    );
+
                     $sql_constraints_query .= 'ALTER TABLE '
                     . PMA_Util::backquoteCompat($table_alias, $compat)
                     . $crlf;
@@ -1344,65 +1320,30 @@ class ExportSql extends ExportPlugin
                     $has_indexes = 1;
 
                     // comments -> indexes for dumped tables
-                    if (! isset($sql_indexes)) {
-                        if (isset($GLOBALS['no_constraints_comments'])) {
-                            $sql_indexes = '';
-                        } else {
-                            $sql_indexes = $crlf
-                                . $this->_exportComment()
-                                . $this->_exportComment(
-                                    __('Indexes for dumped tables')
-                                )
-                                . $this->_exportComment();
-                        }
-                    }
-                    // comments for current table
-                    if (! isset($GLOBALS['no_constraints_comments'])) {
-                        $sql_indexes .= $crlf
-                        . $this->_exportComment()
-                        . $this->_exportComment(
-                            __('Indexes for table')
-                            . ' '
-                            . PMA_Util::backquoteCompat($table_alias, $compat)
-                        )
-                        . $this->_exportComment();
-                    }
-                    $sql_indexes_query .= 'ALTER TABLE '
+                    $sql_indexes = $this->generateComment(
+                        $crlf, $sql_indexes, __('Indexes for dumped tables'),
+                        __('Indexes for table'), $table_alias, $compat
+                    );
+                    $sql_indexes_query_start = 'ALTER TABLE '
                     . PMA_Util::backquoteCompat($table_alias, $compat)
-                    . $crlf;
+                    . $crlf . ' ';
+                    $sql_indexes_query .= $sql_indexes_query_start;
 
-                    $sql_indexes .= 'ALTER TABLE '
+                    $sql_indexes_start = 'ALTER TABLE '
                     . PMA_Util::backquoteCompat($table_alias,  $compat)
-                    . $crlf;
+                    . $crlf . ' ';
+                    $sql_indexes .= $sql_indexes_start;
                 }
                 if ($update_indexes_increments && preg_match(
                     '@AUTO_INCREMENT@',
                     $create_query
                 )) {
                     // comments -> auto increments for dumped tables
-                    if (! isset($sql_auto_increments)) {
-                        if (isset($GLOBALS['no_constraints_comments'])) {
-                            $sql_auto_increments = '';
-                        } else {
-                            $sql_auto_increments = $crlf
-                                . $this->_exportComment()
-                                . $this->_exportComment(
-                                    __('AUTO_INCREMENT for dumped tables')
-                                )
-                                . $this->_exportComment();
-                        }
-                    }
-                    // comments for current table
-                    if (! isset($GLOBALS['no_constraints_comments'])) {
-                        $sql_auto_increments .= $crlf
-                        . $this->_exportComment()
-                        . $this->_exportComment(
-                            __('AUTO_INCREMENT for table')
-                            . ' '
-                            . PMA_Util::backquoteCompat($table_alias, $compat)
-                        )
-                        . $this->_exportComment();
-                    }
+                    $sql_auto_increments = $this->generateComment(
+                        $crlf, $sql_auto_increments,
+                        __('AUTO_INCREMENT for dumped tables'),
+                        __('Indexes for table'), $table_alias, $compat
+                    );
                     $sql_auto_increments .= 'ALTER TABLE '
                     . PMA_Util::backquoteCompat($table_alias, $compat)
                     . $crlf;
@@ -1429,10 +1370,8 @@ class ExportSql extends ExportPlugin
                         '( AUTO_INCREMENT | AUTO_INCREMENT,| AUTO_INCREMENT$)',
                         $sql_lines[$k]
                     )) {
-                        //removes extra space at the beginning, if there is
-                        $sql_lines[$k] = ltrim($sql_lines[$k], ' ');
                         //creates auto increment code
-                        $sql_auto_increments .= "MODIFY " . $sql_lines[$k];
+                        $sql_auto_increments .= "  MODIFY " . ltrim($sql_lines[$k]);
                         //removes auto increment code from table definition
                         $sql_lines[$k] = str_replace(
                             " AUTO_INCREMENT", "", $sql_lines[$k]
@@ -1444,9 +1383,9 @@ class ExportSql extends ExportPlugin
                             $sql_lines[$k]
                         )) {
                         //adds auto increment value
-                        $increment_value = $pmaString->substr(
+                        $increment_value = /*overload*/mb_substr(
                             $sql_lines[$k],
-                            $pmaString->strpos($sql_lines[$k], "AUTO_INCREMENT")
+                            /*overload*/mb_strpos($sql_lines[$k], "AUTO_INCREMENT")
                         );
                         $increment_value_array = explode(' ', $increment_value);
                         $sql_auto_increments .= $increment_value_array[0] . ";";
@@ -1455,7 +1394,7 @@ class ExportSql extends ExportPlugin
                 }
 
                 if ($sql_auto_increments != '') {
-                    $sql_auto_increments = $pmaString->substr(
+                    $sql_auto_increments = /*overload*/mb_substr(
                         $sql_auto_increments, 0, -1
                     ) . ';';
                 }
@@ -1469,6 +1408,7 @@ class ExportSql extends ExportPlugin
                     );
 
                     $first = true;
+                    $sql_index_ended = false;
                     for ($j = $first_occur; $j < $sql_count; $j++) {
                         //removes extra space at the beginning, if there is
                         $sql_lines[$j]=ltrim($sql_lines[$j], ' ');
@@ -1481,7 +1421,7 @@ class ExportSql extends ExportPlugin
                             if (! $first) {
                                 $sql_constraints .= $crlf;
                             }
-                            $posConstraint = $pmaString->strpos(
+                            $posConstraint = /*overload*/mb_strpos(
                                 $sql_lines[$j],
                                 'CONSTRAINT'
                             );
@@ -1521,9 +1461,36 @@ class ExportSql extends ExportPlugin
                             $sql_lines[$j]
                         )) {
                             //if it's a index
+
+                            // if index query was terminated earlier
+                            if ($sql_index_ended) {
+                                // start a new query with ALTER TABLE
+                                $sql_indexes .= $sql_indexes_start;
+                                $sql_indexes_query .= $sql_indexes_query_start;
+
+                                $sql_index_ended = false;
+                            }
+
                             $tmp_str = " ADD " . $sql_lines[$j];
                             $sql_indexes_query .= $tmp_str;
                             $sql_indexes .= $tmp_str;
+
+                            // InnoDB supports one FULLTEXT index creation at a time
+                            // So end the query and start over
+                            if ($update_indexes_increments && preg_match(
+                                '@FULLTEXT KEY[\s]+@',
+                                $sql_lines[$j]
+                            )) {
+                                //removes superfluous comma at the end
+                                $sql_indexes = rtrim($sql_indexes, ',');
+                                $sql_indexes_query = rtrim($sql_indexes_query, ',');
+
+                                // add ending semicolon
+                                $sql_indexes .= ';' . $crlf;
+                                $sql_indexes_query .= ';' . $crlf;
+
+                                $sql_index_ended = true;
+                            }
                         } else {
                             break;
                         }
@@ -1536,7 +1503,7 @@ class ExportSql extends ExportPlugin
                         $sql_constraints .= ';' . $crlf;
                         $sql_constraints_query .= ';';
                     }
-                    if ($has_indexes == 1) {
+                    if ($has_indexes == 1 && ! $sql_index_ended) {
                         $sql_indexes .= ';' . $crlf;
                         $sql_indexes_query .= ';';
                     }
@@ -2062,8 +2029,6 @@ class ExportSql extends ExportPlugin
             $separator      = ';';
         }
 
-        /** @var PMA_String $pmaString */
-        $pmaString = $GLOBALS['PMA_String'];
         while ($row = $GLOBALS['dbi']->fetchRow($result)) {
             if ($current_row == 0) {
                 $head = $this->_possibleCRLF()
@@ -2182,7 +2147,7 @@ class ExportSql extends ExportPlugin
                             . implode(', ', $values) . ')';
                     } else {
                         $insert_line  = '(' . implode(', ', $values) . ')';
-                        $insertLineSize = $pmaString->strlen($insert_line);
+                        $insertLineSize = /*overload*/mb_strlen($insert_line);
                         $sql_max_size = $GLOBALS['sql_max_query_size'];
                         if (isset($sql_max_size)
                             && $sql_max_size > 0
@@ -2196,7 +2161,7 @@ class ExportSql extends ExportPlugin
                             $insert_line = $schema_insert . $insert_line;
                         }
                     }
-                    $query_size += $pmaString->strlen($insert_line);
+                    $query_size += /*overload*/mb_strlen($insert_line);
                     // Other inserts case
                 } else {
                     $insert_line = $schema_insert
@@ -2397,9 +2362,6 @@ class ExportSql extends ExportPlugin
         $on_seen = false;
         $size = $tokens['len'];
 
-        /** @var PMA_String $pmaString */
-        $pmaString = $GLOBALS['PMA_String'];
-
         for ($i = 0; $i < $size && !$query_end; $i++) {
             $type = $tokens[$i]['type'];
             $data = $tokens[$i]['data'];
@@ -2409,9 +2371,9 @@ class ExportSql extends ExportPlugin
             $d_unq = PMA_Util::unQuote($data);
             $d_unq_next = PMA_Util::unQuote($data_next);
             $d_unq_prev = PMA_Util::unQuote($data_prev);
-            $d_upper = $pmaString->strtoupper($d_unq);
-            $d_upper_next = $pmaString->strtoupper($d_unq_next);
-            $d_upper_prev = $pmaString->strtoupper($d_unq_prev);
+            $d_upper = /*overload*/mb_strtoupper($d_unq);
+            $d_upper_next = /*overload*/mb_strtoupper($d_unq_next);
+            $d_upper_prev = /*overload*/mb_strtoupper($d_unq_prev);
             $pos = $tokens[$i]['pos'] + $offset;
             if ($type === 'alpha_reservedWord') {
                 if ($query_type === ''
@@ -2564,8 +2526,8 @@ class ExportSql extends ExportPlugin
         if (!empty($GLOBALS['sql_backquotes'])) {
             $alias = PMA_Util::backquote($alias);
         }
-        $alias_len = $GLOBALS['PMA_String']->strlen($alias);
-        $data_len = $GLOBALS['PMA_String']->strlen($data);
+        $alias_len = /*overload*/mb_strlen($alias);
+        $data_len = /*overload*/mb_strlen($data);
         if (isset($offset)) {
             $offset += ($alias_len - $data_len);
         }
@@ -2573,5 +2535,46 @@ class ExportSql extends ExportPlugin
             $sql_query, $alias, $pos - $data_len, $data_len
         );
         return $sql_query;
+    }
+
+    /**
+     * Generate comment
+     *
+     * @param string $crlf          Carriage return character
+     * @param string $sql_statement SQL statement
+     * @param string $comment1      Comment for dumped table
+     * @param string $comment2      Comment for current table
+     * @param string $table_alias   Table alias
+     * @param string $compat        Compatibility mode
+     *
+     * @return string
+     */
+    protected function generateComment(
+        $crlf, $sql_statement, $comment1, $comment2, $table_alias, $compat
+    ) {
+        if (!isset($sql_statement)) {
+            if (isset($GLOBALS['no_constraints_comments'])) {
+                $sql_statement = '';
+            } else {
+                $sql_statement = $crlf
+                    . $this->_exportComment()
+                    . $this->_exportComment($comment1)
+                    . $this->_exportComment();
+            }
+        }
+
+        // comments for current table
+        if (!isset($GLOBALS['no_constraints_comments'])) {
+            $sql_statement .= $crlf
+                . $this->_exportComment()
+                . $this->_exportComment(
+                    $comment2 . ' ' . PMA_Util::backquoteCompat(
+                        $table_alias, $compat
+                    )
+                )
+                . $this->_exportComment();
+        }
+
+        return $sql_statement;
     }
 }

@@ -153,16 +153,6 @@ function PMA_getHtmlForServerProcesslist()
             $column['sort_order'] = 'DESC';
         }
 
-        if ($is_sorted) {
-            if ($_REQUEST['sort_order'] == 'ASC') {
-                $asc_display_style = 'inline';
-                $desc_display_style = 'none';
-            } elseif ($_REQUEST['sort_order'] == 'DESC') {
-                $desc_display_style = 'inline';
-                $asc_display_style = 'none';
-            }
-        }
-
         $retval .= '<th>';
         $columnUrl = PMA_URL_getCommon($column);
         $retval .= '<a href="server_status_processes.php' . $columnUrl . '" ';
@@ -175,6 +165,12 @@ function PMA_getHtmlForServerProcesslist()
         $retval .= $column['column_name'];
 
         if ($is_sorted) {
+            $asc_display_style = 'inline';
+            $desc_display_style = 'none';
+            if ($_REQUEST['sort_order'] === 'DESC') {
+                $desc_display_style = 'inline';
+                $asc_display_style = 'none';
+            }
             $retval .= '<img class="icon ic_s_desc soimg" alt="'
                 . __('Descending') . '" title="" src="themes/dot.gif" '
                 . 'style="display: ' . $desc_display_style . '" />';
@@ -233,14 +229,11 @@ function PMA_getHtmlForServerProcesslist()
  */
 function PMA_getHtmlForServerProcessItem($process, $odd_row, $show_full_sql)
 {
-    /** @var PMA_String $pmaString */
-    $pmaString = $GLOBALS['PMA_String'];
-
     // Array keys need to modify due to the way it has used
     // to display column values
     if (! empty($_REQUEST['order_by_field']) && ! empty($_REQUEST['sort_order']) ) {
         foreach (array_keys($process) as $key) {
-            $new_key = ucfirst($pmaString->strtolower($key));
+            $new_key = ucfirst(/*overload*/mb_strtolower($key));
             if ($new_key !== $key) {
                 $process[$new_key] = $process[$key];
                 unset($process[$key]);
@@ -261,7 +254,7 @@ function PMA_getHtmlForServerProcessItem($process, $odd_row, $show_full_sql)
     $retval .= '<td>' . htmlspecialchars($process['User']) . '</td>';
     $retval .= '<td>' . htmlspecialchars($process['Host']) . '</td>';
     $retval .= '<td>' . ((! isset($process['db'])
-            || !$pmaString->strlen($process['db']))
+            || !/*overload*/mb_strlen($process['db']))
             ? '<i>' . __('None') . '</i>'
             : htmlspecialchars($process['db'])) . '</td>';
     $retval .= '<td>' . htmlspecialchars($process['Command']) . '</td>';

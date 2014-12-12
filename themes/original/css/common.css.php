@@ -43,7 +43,7 @@ body#loginform {
     margin: 0;
 }
 
-#page_content {
+#page_content, #session_debug {
     margin: 0 .5em;
 }
 
@@ -251,14 +251,14 @@ fieldset .formelement {
     fieldset .formelement {
         clear: none;
     }
-    .relationalTable td:first-child + td {
+    #foreign_keys.relationalTable td:first-child + td {
         width: 25%;
     }
-    .relationalTable td:first-child + td select {
+    #foreign_keys.relationalTable td:first-child + td select {
         width: 32%;
         margin-right: 1%;
     }
-    .relationalTable {
+    #foreign_keys.relationalTable {
         width: 100%;
     }
 
@@ -757,6 +757,9 @@ div#dataDisplay input, div#dataDisplay select {
 div#dataDisplay th {
     line-height: 2em;
 }
+table#tableFieldsId {
+    width: 100%;
+}
 
 /* Calendar */
 table.calendar {
@@ -1183,29 +1186,6 @@ div#profilingchart {
     left: 11px;
     bottom:24px;
 }
-
-#profilesummarytable th.header, #profiletable th.header{
-    cursor: pointer;
-}
-
-#profilesummarytable th.header .sorticon, #profiletable th.header .sorticon{
-    width: 16px;
-    height: 16px;
-    background-repeat: no-repeat;
-    background-position: right center;
-    display: inline-block;
-    vertical-align: middle;
-    float: right;
-}
-
-#profilesummarytable th.headerSortUp .sorticon, #profiletable th.headerSortUp .sorticon{
-    background-image: url(<?php echo $_SESSION['PMA_Theme']->getImgPath('s_desc.png');?>);
-}
-
-#profilesummarytable th.headerSortDown .sorticon, #profiletable th.headerSortDown .sorticon{
-    background-image: url(<?php echo $_SESSION['PMA_Theme']->getImgPath('s_asc.png');?>);
-}
-
 /* end profiling */
 
 /* querybox */
@@ -1388,7 +1368,7 @@ div.sqlvalidate {
     overflow:           auto;
 }
 
-#result_query div.sqlOuter,
+.result_query div.sqlOuter,
 div.sqlvalidate  {
     border:             <?php echo $GLOBALS['cfg']['MainColor']; ?> solid 1px;
     border-top:         0;
@@ -1678,9 +1658,6 @@ input#input_import_file {
 }
 #addColumns input[type="submit"] {
     margin-<?php echo $left; ?>: 1em;
-}
-.margin#change_column_dialog {
-    margin: 0 .5em;
 }
 
 /**
@@ -2049,7 +2026,7 @@ fieldset .disabled-field td {
 #placeholder {
     position: relative;
     border: 1px solid #aaa;
-    float: right;
+    float: <?php echo $right; ?>;
     overflow: hidden;
 }
 
@@ -2649,7 +2626,7 @@ div#page_content form#db_search_form.ajax fieldset {
     margin-top: -0.3em;
 }
 
-div#page_content div#tableslistcontainer, div#page_content div.notice, div#page_content div#result_query {
+div#page_content div#tableslistcontainer, div#page_content div.notice, div#page_content div.result_query {
     margin-top: 1em;
 }
 
@@ -3090,3 +3067,32 @@ span.drag_icon {
 .topmargin {
     margin-top: 1em;
 }
+
+/* styles for sortable tables created with tablesorter jquery plugin */
+th.header {
+    cursor: pointer;
+    color: #0000FF;
+}
+
+th.header:hover {
+    text-decoration: underline;
+}
+
+th.header .sorticon {
+    width: 16px;
+    height: 16px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    display: inline-table;
+    vertical-align: middle;
+    float: right;
+}
+
+th.headerSortUp .sorticon, th.headerSortDown:hover .sorticon {
+    background-image: url(<?php echo $_SESSION['PMA_Theme']->getImgPath('s_desc.png');?>);
+}
+
+th.headerSortDown .sorticon, th.headerSortUp:hover .sorticon {
+    background-image: url(<?php echo $_SESSION['PMA_Theme']->getImgPath('s_asc.png');?>);
+}
+/* end of styles of sortable tables */

@@ -164,13 +164,10 @@ if (! defined('PMA_MINIMUM_COMMON')) {
 $PMA_PHP_SELF = PMA_getenv('PHP_SELF');
 $_PATH_INFO = PMA_getenv('PATH_INFO');
 if (! empty($_PATH_INFO) && ! empty($PMA_PHP_SELF)) {
-    /** @var PMA_String $pmaString */
-    $pmaString = $GLOBALS['PMA_String'];
-
-    $path_info_pos = $pmaString->strrpos($PMA_PHP_SELF, $_PATH_INFO);
-    $pathLength = $path_info_pos + $pmaString->strlen($_PATH_INFO);
-    if ($pathLength === $pmaString->strlen($PMA_PHP_SELF)) {
-        $PMA_PHP_SELF = $pmaString->substr($PMA_PHP_SELF, 0, $path_info_pos);
+    $path_info_pos = /*overload*/mb_strrpos($PMA_PHP_SELF, $_PATH_INFO);
+    $pathLength = $path_info_pos + /*overload*/mb_strlen($_PATH_INFO);
+    if ($pathLength === /*overload*/mb_strlen($PMA_PHP_SELF)) {
+        $PMA_PHP_SELF = /*overload*/mb_substr($PMA_PHP_SELF, 0, $path_info_pos);
     }
 }
 $PMA_PHP_SELF = htmlspecialchars($PMA_PHP_SELF);
@@ -470,7 +467,9 @@ if (PMA_checkPageValidity($_REQUEST['back'], $goto_whitelist)) {
  * f.e. lang, server, collation_connection in PMA_Config
  */
 $token_mismatch = true;
+$token_provided = false;
 if (PMA_isValid($_REQUEST['token'])) {
+    $token_provided = true;
     $token_mismatch = ($_SESSION[' PMA_token '] != $_REQUEST['token']);
 }
 
@@ -594,7 +593,10 @@ if ($GLOBALS['PMA_Config']->error_config_default_file) {
 }
 if ($GLOBALS['PMA_Config']->error_pma_uri) {
     trigger_error(
-        __('The [code]$cfg[\'PmaAbsoluteUri\'][/code] directive MUST be set in your configuration file!'),
+        __(
+            'The [code]$cfg[\'PmaAbsoluteUri\'][/code]'
+            . ' directive MUST be set in your configuration file!'
+        ),
         E_USER_ERROR
     );
 }
@@ -745,11 +747,12 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         && ! is_numeric($_REQUEST['server'])
     ) {
         foreach ($cfg['Servers'] as $i => $server) {
-            $verboseLower = $PMA_String->strtolower($server['verbose']);
+            $verboseToLower = /*overload*/mb_strtolower($server['verbose']);
+            $serverToLower = /*overload*/mb_strtolower($_REQUEST['server']);
             if ($server['host'] == $_REQUEST['server']
                 || $server['verbose'] == $_REQUEST['server']
-                || $verboseLower == $PMA_String->strtolower($_REQUEST['server'])
-                || md5($verboseLower) == $PMA_String->strtolower($_REQUEST['server'])
+                || $verboseToLower == $serverToLower
+                || md5($verboseToLower) == $serverToLower
             ) {
                 $_REQUEST['server'] = $i;
                 break;
@@ -839,7 +842,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
 
         // to allow HTTP or http
         $cfg['Server']['auth_type']
-            = $PMA_String->strtolower($cfg['Server']['auth_type']);
+            = /*overload*/mb_strtolower($cfg['Server']['auth_type']);
 
         /**
          * the required auth type plugin
@@ -853,6 +856,9 @@ if (! defined('PMA_MINIMUM_COMMON')) {
                 __('Invalid authentication method set in configuration:')
                 . ' ' . $cfg['Server']['auth_type']
             );
+        }
+        if (isset($_REQUEST['pma_password'])) {
+            $_REQUEST['pma_password'] = substr($_REQUEST['pma_password'], 0, 256);
         }
         include_once  './libraries/plugins/auth/' . $auth_class . '.class.php';
         // todo: add plugin manager
@@ -928,7 +934,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         }
 
         // if using TCP socket is not needed
-        if ($PMA_String->strtolower($cfg['Server']['connect_type']) == 'tcp') {
+        if (/*overload*/mb_strtolower($cfg['Server']['connect_type']) == 'tcp') {
             $cfg['Server']['socket'] = '';
         }
 
@@ -981,6 +987,8 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         if (! $controllink) {
             $controllink = $userlink;
         }
+
+        $auth_plugin->storeUserCredentials();
 
         /* Log success */
         PMA_logUser($cfg['Server']['user']);

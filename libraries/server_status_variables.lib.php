@@ -210,7 +210,7 @@ function PMA_getHtmlForVariablesList($ServerStatusData)
  */
 function PMA_getHtmlForRenderVariables($ServerStatusData, $alerts, $strShowStatus)
 {
-    $retval  = '<table class="data sortable noclick" id="serverstatusvariables">';
+    $retval  = '<table class="data noclick" id="serverstatusvariables">';
     $retval .= '<col class="namecol" />';
     $retval .= '<col class="valuecol" />';
     $retval .= '<col class="descrcol" />';
@@ -222,9 +222,6 @@ function PMA_getHtmlForRenderVariables($ServerStatusData, $alerts, $strShowStatu
     $retval .= '</tr>';
     $retval .= '</thead>';
     $retval .= '<tbody>';
-
-    /** @var PMA_String $pmaString */
-    $pmaString = $GLOBALS['PMA_String'];
 
     $odd_row = false;
     foreach ($ServerStatusData->status as $name => $value) {
@@ -239,7 +236,7 @@ function PMA_getHtmlForRenderVariables($ServerStatusData, $alerts, $strShowStatu
         $retval .= htmlspecialchars(str_replace('_', ' ', $name));
         // Fields containing % are calculated,
         // they can not be described in MySQL documentation
-        if ($pmaString->strpos($name, '%') === false) {
+        if (/*overload*/mb_strpos($name, '%') === false) {
             $retval .= PMA_Util::showMySQLDocu(
                 'server-status-variables',
                 false,
@@ -256,9 +253,9 @@ function PMA_getHtmlForRenderVariables($ServerStatusData, $alerts, $strShowStatu
                 $retval .= '<span class="allfine">';
             }
         }
-        if ('%' === $pmaString->substr($name, -1, 1)) {
+        if (substr($name, -1) === '%') {
             $retval .= htmlspecialchars(PMA_Util::formatNumber($value, 0, 2)) . ' %';
-        } elseif ($pmaString->strpos($name, 'Uptime') !== false) {
+        } elseif (strpos($name, 'Uptime') !== false) {
             $retval .= htmlspecialchars(
                 PMA_Util::timespanFormat($value)
             );

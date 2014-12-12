@@ -12,6 +12,29 @@ if (! defined('PHPMYADMIN')) {
 require_once 'libraries/relation.lib.php';
 
 /**
+ * Function to get html to display a page selector
+ *
+ * @param array  $cfgRelation information about the configuration storage
+ * @param string $db          database name
+ *
+ * @return string html content
+ */
+function PMA_getHtmlForPageSelector($cfgRelation, $db)
+{
+    $html = '<select name="selected_page" id="selected_page">';
+    $html .= '<option value="0">-- ' . __('Select page') . ' --</option>';
+    if ($cfgRelation['pdfwork']) {
+        $pages = PMA_getPageIdsAndNames($db);
+        foreach ($pages as $nr => $desc) {
+            $html .= '<option value="' . $nr . '">';
+            $html .= htmlspecialchars($desc) . '</option>';
+        }
+    }
+    $html .= '</select>';
+    return $html;
+}
+
+/**
  * Function to get html for displaying the page edit/delete form
  *
  * @param string $db        database name
@@ -34,16 +57,7 @@ function PMA_getHtmlForEditOrDeletePages($db, $operation)
         $html .= __("Page to delete");
     }
     $html .= ': </label>';
-    $html .= '<select name="selected_page" id="selected_page">';
-    $html .= '<option value="0">-- ' . __('Select page') . ' --</option>';
-    if ($cfgRelation['pdfwork']) {
-        $pages = PMA_getPageIdsAndNames($db);
-        foreach ($pages as $nr => $desc) {
-            $html .= '<option value="' . $nr . '">';
-            $html .= htmlspecialchars($desc) . '</option>';
-        }
-    }
-    $html .= '</select>';
+    $html .= PMA_getHtmlForPageSelector($cfgRelation, $db);
     $html .= '</fieldset>';
     $html .= '</form>';
     return $html;
@@ -73,17 +87,7 @@ function PMA_getHtmlForPageSaveAs($db)
     $html .= '<tr>';
     $html .= '<td>';
     $html .= '<input type="hidden" name="operation" value="savePage" />';
-    $html .= '<select name="selected_page" id="selected_page">';
-    $html .= '<option value="0">-- ' . __('Select page') . ' --</option>';
-
-    if ($cfgRelation['pdfwork']) {
-        $pages = PMA_getPageIdsAndNames($db);
-        foreach ($pages as $nr => $desc) {
-            $html .= '<option value="' . $nr . '">';
-            $html .= htmlspecialchars($desc) . '</option>';
-        }
-    }
-    $html .= '</select>';
+    $html .= PMA_getHtmlForPageSelector($cfgRelation, $db);
     $html .= '</td>';
     $html .= '</tr>';
 
@@ -553,9 +557,11 @@ function PMA_getDatabaseTables(
         $html .= '<table id="' . $t_n_url . '" cellpadding="0" cellspacing="0" ';
         $html .= 'class="pmd_tab" style="position:absolute;';
         $html .= 'left:';
-        $html .= (isset($tab_pos[$t_n]) ? $tab_pos[$t_n]["X"] : rand(20, 700)) . 'px;';
+        $html .= (isset($tab_pos[$t_n]) ? $tab_pos[$t_n]["X"] : rand(20, 700))
+            . 'px;';
         $html .= 'top:';
-        $html .= (isset($tab_pos[$t_n]) ? $tab_pos[$t_n]["Y"] : rand(20, 550)) . 'px;';
+        $html .= (isset($tab_pos[$t_n]) ? $tab_pos[$t_n]["Y"] : rand(20, 550))
+            . 'px;';
         $html .= 'display:';
         $html .= (isset($tab_pos[$t_n]) || $display_page == -1) ? 'block;' : 'none;';
         $html .= 'z-index: 1;">';
@@ -583,7 +589,7 @@ function PMA_getDatabaseTables(
         $html .= 'onmouseout="this.className=\'small_tab\';" ';
         $html .= '>';
 
-        // no space alloawd here, between tags and content !!!
+        // no space allowed here, between tags and content !!!
         // JavaScript function does require this
         if (! isset($tab_pos[$t_n]) || ! empty($tab_pos[$t_n]["V"])) {
             $html .= 'v';
@@ -662,7 +668,8 @@ function PMA_getDatabaseTables(
 
             $tmpColumn = $t_n . "." . $tab_column[$t_n]["COLUMN_NAME"][$j];
 
-            if (!PMA_Util::isForeignKeySupported($GLOBALS['PMD']['TABLE_TYPE'][$i])) {
+            if (!PMA_Util::isForeignKeySupported($GLOBALS['PMD']['TABLE_TYPE'][$i])
+            ) {
                 $html .= (isset($tables_pk_or_unique_keys[$tmpColumn]) ? 1 : 0);
             } else {
                 // if foreign keys are supported, it's not necessary that the
@@ -702,22 +709,19 @@ function PMA_getDatabaseTables(
                 $html .= '<img src="' . $_SESSION['PMA_Theme']->getImgPath()
                     . 'pmd/Field_small';
 
-                /** @var PMA_String $pmaString */
-                $pmaString = $GLOBALS['PMA_String'];
-
-                if ($pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'char')
-                    || $pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'text')
+                if (strstr($tab_column[$t_n]["TYPE"][$j], 'char')
+                    || strstr($tab_column[$t_n]["TYPE"][$j], 'text')
                 ) {
                     $html .= '_char';
-                } elseif ($pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'int')
-                    || $pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'float')
-                    || $pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'double')
-                    || $pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'decimal')
+                } elseif (strstr($tab_column[$t_n]["TYPE"][$j], 'int')
+                    || strstr($tab_column[$t_n]["TYPE"][$j], 'float')
+                    || strstr($tab_column[$t_n]["TYPE"][$j], 'double')
+                    || strstr($tab_column[$t_n]["TYPE"][$j], 'decimal')
                 ) {
                     $html .= '_int';
-                } elseif ($pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'date')
-                    || $pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'time')
-                    || $pmaString->strstr($tab_column[$t_n]["TYPE"][$j], 'year')
+                } elseif (strstr($tab_column[$t_n]["TYPE"][$j], 'date')
+                    || strstr($tab_column[$t_n]["TYPE"][$j], 'time')
+                    || strstr($tab_column[$t_n]["TYPE"][$j], 'year')
                 ) {
                     $html .= '_date';
                 }
