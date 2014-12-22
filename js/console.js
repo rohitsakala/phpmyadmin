@@ -543,14 +543,13 @@ var PMA_consoleInput = {
             if (PMA_consoleInput._codemirror) {
                 cursorLine = editor.getCursor().line;
                 totalLine = editor.lineCount();
-            }
-            else {
+            } else {
                 // Get cursor position from textarea
                 var text = PMA_consoleInput.getText();
                 cursorLine = text.substr(0, editor.prop("selectionStart")).split("\n").length - 1;
                 totalLine = text.split(/\r*\n/).length;
             }
-            if (cursorLine == 0) {
+            if (cursorLine === 0) {
                 upPermitted = true;
             }
             if (cursorLine == totalLine - 1) {
@@ -560,28 +559,29 @@ var PMA_consoleInput = {
             var queryString = false;
             if (upPermitted && event.keyCode == 38) {
                 // Navigate up in history
-                if (PMA_consoleInput._historyCount == 0) {
+                if (PMA_consoleInput._historyCount === 0) {
                     PMA_consoleInput._historyPreserveCurrent = PMA_consoleInput.getText();
                 }
                 nextCount = PMA_consoleInput._historyCount + 1;
                 queryString = PMA_consoleMessages.getHistory(nextCount);
-            }
-            else if (downPermitted && event.keyCode == 40) {
+            } else if (downPermitted && event.keyCode == 40) {
                 // Navigate down in history
-                if (PMA_consoleInput._historyCount == 0) {
+                if (PMA_consoleInput._historyCount === 0) {
                     return;
                 }
                 nextCount = PMA_consoleInput._historyCount - 1;
-                if (nextCount == 0) {
+                if (nextCount === 0) {
                     queryString = PMA_consoleInput._historyPreserveCurrent;
-                }
-                else {
+                } else {
                     queryString = PMA_consoleMessages.getHistory(nextCount);
                 }
             }
             if (queryString !== false) {
                 PMA_consoleInput._historyCount = nextCount;
                 PMA_consoleInput.setText(queryString, 'console');
+                if (PMA_consoleInput._codemirror) {
+                    editor.setCursor(editor.lineCount(), 0);
+                }
                 event.preventDefault();
             }
         }
@@ -721,10 +721,11 @@ var PMA_consoleMessages = {
         var $queries = $('#pma_console .content .console_message_container .query');
         var length = $queries.length;
         var $query = $queries.eq(length - nthLast);
-        if (!$query || (length - nthLast) < 0)
+        if (!$query || (length - nthLast) < 0) {
             return false;
-        else
+        } else {
             return $query.text();
+        }
     },
     /**
      * Used for log new message
