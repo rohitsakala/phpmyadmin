@@ -733,6 +733,7 @@ function PMA_isJustBrowsing($analyzed_sql_results, $find_real_end)
         $analyzed_sql_results['analyzed_sql'][0]['table_ref'][1]['table_name']
     );
     if (! $analyzed_sql_results['is_group']
+        && ! $analyzed_sql_results['is_func']
         && ! isset($analyzed_sql_results['analyzed_sql'][0]['queryflags']['union'])
         && ! $distinct
         && ! $table_name
@@ -965,25 +966,6 @@ function PMA_getEnumOrSetValues($db, $table, $columnType)
         $response->addJSON('select', $select);
     }
     exit;
-}
-
-/**
- * Function to append the limit clause
- *
- * @param array $analyzed_sql analyzed sql query
- *
- * @return array
- */
-function PMA_appendLimitClause($analyzed_sql)
-{
-    $sql_limit_to_append = ' LIMIT ' . $_SESSION['tmpval']['pos']
-        . ', ' . $_SESSION['tmpval']['max_rows'] . " ";
-    $full_sql_query = PMA_getSqlWithLimitClause(
-        $analyzed_sql,
-        $sql_limit_to_append
-    );
-
-    return array($sql_limit_to_append, $full_sql_query);
 }
 
 /**
@@ -1889,7 +1871,6 @@ function PMA_getHtmlForPrintButton()
  * @param array              $analyzed_sql_results analysed sql results
  * @param string             $db                   current database
  * @param string             $table                current table
- * @param string             $disp_mode            display mode
  * @param string             $message              message to show
  * @param array              $sql_data             sql data
  * @param PMA_DisplayResults $displayResultsObject Instance of DisplayResults.class
@@ -1913,7 +1894,7 @@ function PMA_getHtmlForPrintButton()
  * @return string html
  */
 function PMA_getQueryResponseForResultsReturned($result,
-    $analyzed_sql_results, $db, $table, $disp_mode, $message, $sql_data,
+    $analyzed_sql_results, $db, $table, $message, $sql_data,
     $displayResultsObject, $pmaThemeImage,
     $unlim_num_rows, $num_rows,  $full_sql_query, $disp_query,
     $disp_message, $profiling_results, $query_type, $selectedTables, $sql_query,
@@ -1958,11 +1939,10 @@ function PMA_getQueryResponseForResultsReturned($result,
     $editable = ($has_unique || $updatableView) && $just_one_table;
 
     // Displays the results in a table
-    if (empty($disp_mode)) {
-        // see the "PMA_setDisplayMode()" function in
-        // libraries/DisplayResults.class.php
-        $disp_mode = 'urdr111101';
-    }
+    // see the "PMA_setDisplayMode()" function in
+    // libraries/DisplayResults.class.php
+    $disp_mode = 'urdr111101';
+
     if (!empty($table) && ($GLOBALS['dbi']->isSystemSchema($db) || !$editable)) {
         $disp_mode = 'nnnn110111';
     }
@@ -2074,7 +2054,6 @@ function PMA_getQueryResponseForResultsReturned($result,
  * @param array|null $extra_data             extra data
  * @param bool       $is_affected            whether affected or not
  * @param string     $message_to_show        message to show
- * @param string     $disp_mode              display mode
  * @param string     $message                message
  * @param array|null $sql_data               sql data
  * @param string     $goto                   goto page url
@@ -2093,14 +2072,14 @@ function PMA_getQueryResponseForResultsReturned($result,
  */
 function PMA_executeQueryAndSendQueryResponse($analyzed_sql_results,
     $is_gotofile, $db, $table, $find_real_end, $sql_query_for_bookmark,
-    $extra_data, $is_affected, $message_to_show, $disp_mode, $message,
+    $extra_data, $is_affected, $message_to_show, $message,
     $sql_data, $goto, $pmaThemeImage, $disp_query, $disp_message,
     $query_type, $sql_query, $selectedTables, $complete_query
 ) {
     $html_output = PMA_executeQueryAndGetQueryResponse(
         $analyzed_sql_results, $is_gotofile, $db, $table,
         $find_real_end, $sql_query_for_bookmark,
-        $extra_data, $is_affected, $message_to_show, $disp_mode, $message,
+        $extra_data, $is_affected, $message_to_show, $message,
         $sql_data, $goto, $pmaThemeImage, $disp_query, $disp_message,
         $query_type, $sql_query, $selectedTables, $complete_query
     );
@@ -2122,7 +2101,6 @@ function PMA_executeQueryAndSendQueryResponse($analyzed_sql_results,
  * @param array|null $extra_data             extra data
  * @param bool       $is_affected            whether affected or not
  * @param string     $message_to_show        message to show
- * @param string     $disp_mode              display mode
  * @param string     $message                message
  * @param array|null $sql_data               sql data
  * @param string     $goto                   goto page url
@@ -2141,7 +2119,7 @@ function PMA_executeQueryAndSendQueryResponse($analyzed_sql_results,
  */
 function PMA_executeQueryAndGetQueryResponse($analyzed_sql_results,
     $is_gotofile, $db, $table, $find_real_end, $sql_query_for_bookmark,
-    $extra_data, $is_affected, $message_to_show, $disp_mode, $message,
+    $extra_data, $is_affected, $message_to_show, $message,
     $sql_data, $goto, $pmaThemeImage, $disp_query, $disp_message,
     $query_type, $sql_query, $selectedTables, $complete_query
 ) {
@@ -2169,11 +2147,11 @@ function PMA_executeQueryAndGetQueryResponse($analyzed_sql_results,
 
     // Do append a "LIMIT" clause?
     if (PMA_isAppendLimitClause($analyzed_sql_results)) {
-        list($sql_limit_to_append, $full_sql_query) = PMA_appendLimitClause(
-            $analyzed_sql_results['analyzed_sql']
+        $full_sql_query = PMA_getSqlWithLimitClause(
+            $analyzed_sql_results['analyzed_sql'],
+            ' LIMIT ' . $_SESSION['tmpval']['pos']
+            . ', ' . $_SESSION['tmpval']['max_rows'] . " "
         );
-    } else {
-        $sql_limit_to_append = '';
     }
 
     $GLOBALS['reload'] = PMA_hasCurrentDbChanged($db);
@@ -2206,7 +2184,6 @@ function PMA_executeQueryAndGetQueryResponse($analyzed_sql_results,
             $analyzed_sql_results,
             $db,
             $table,
-            isset($disp_mode) ? $disp_mode : null,
             isset($message) ? $message : null,
             isset($sql_data) ? $sql_data : null,
             $displayResultsObject,

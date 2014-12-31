@@ -2258,6 +2258,13 @@ function PMA_getHtmlForDisplayTableStats($showtable, $table_info_num_rows,
         );
     }
 
+    if (empty($showtable['Data_length'])) {
+        $showtable['Data_length'] = 0;
+    }
+    if (empty($showtable['Index_length'])) {
+        $showtable['Index_length'] = 0;
+    }
+
     $is_innodb = (isset($showtable['Type']) && $showtable['Type'] == 'InnoDB');
 
     // Gets some sizes
@@ -2520,8 +2527,6 @@ function PMA_updateColumns($db, $table)
                 isset($_REQUEST['field_comments'][$i])
                 ? $_REQUEST['field_comments'][$i]
                 : '',
-                $key_fields,
-                $i,
                 isset($_REQUEST['field_move_to'][$i])
                 ? $_REQUEST['field_move_to'][$i]
                 : ''
@@ -2655,7 +2660,6 @@ function PMA_moveColumns($db, $table)
     $columns = $GLOBALS['dbi']->getColumnsFull($db, $table);
     $column_names = array_keys($columns);
     $changes = array();
-    $we_dont_change_keys = array();
 
     // move columns from first to last
     for ($i = 0, $l = count($_REQUEST['move_columns']); $i < $l; $i++) {
@@ -2702,8 +2706,6 @@ function PMA_moveColumns($db, $table)
             isset($data['Extra']) && $data['Extra'] !== '' ? $data['Extra'] : false,
             isset($data['COLUMN_COMMENT']) && $data['COLUMN_COMMENT'] !== ''
             ? $data['COLUMN_COMMENT'] : false,
-            $we_dont_change_keys,
-            $i,
             $i === 0 ? '-first' : $column_names[$i - 1]
         );
         // update current column_names array, first delete old position
@@ -2857,7 +2859,7 @@ function PMA_displayTableBrowseForSelectedColumns($db, $table, $goto,
 
     PMA_executeQueryAndSendQueryResponse(
         $analyzed_sql_results, false, $db, $table, null, null, null, false,
-        null, null, null, null, $goto, $pmaThemeImage, null, null,
+        null, null, null, $goto, $pmaThemeImage, null, null,
         null, $sql_query, null, null
     );
 }

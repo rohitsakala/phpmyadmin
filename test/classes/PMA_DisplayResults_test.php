@@ -395,6 +395,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 '<td><form action="sql.php" method="post" >'
                 . '<input type="hidden" name="db" value="as" />'
                 . '<input type="hidden" name="lang" value="en" />'
+                . '<input type="hidden" name="collation_connection" value="utf-8" />'
                 . '<input type="hidden" name="token" value="token" />'
                 . '<input type="hidden" name="sql_query" value="SELECT * '
                 . 'FROM `pma_bookmark` WHERE 1" />'
@@ -661,16 +662,16 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
     /**
      * Test for _getCheckBoxesForMultipleRowOperations
      *
-     * @param string $dir        _left / _right
-     * @param array  $is_display display mode
-     * @param string $output     output of _getCheckBoxesForMultipleRowOperations
+     * @param string $dir          _left / _right
+     * @param array  $displayParts which parts to display 
+     * @param string $output       output of _getCheckBoxesForMultipleRowOperations
      *
      * @return void
      *
      * @dataProvider dataProviderForGetCheckBoxesForMultipleRowOperations
      */
     public function testGetCheckBoxesForMultipleRowOperations(
-        $dir, $is_display, $output
+        $dir, $displayParts, $output
     ) {
         $vertical_display = array(
             'row_delete' => array(
@@ -696,7 +697,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
             $output,
             $this->_callPrivateFunction(
                 '_getCheckBoxesForMultipleRowOperations',
-                array($dir, $is_display)
+                array($dir, $displayParts)
             )
         );
     }
@@ -826,7 +827,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
      * Test for _getCheckboxForMultiRowSubmissions
      *
      * @param string $del_url           delete url
-     * @param array  $is_display        array with explicit indexes for all
+     * @param array  $displayParts      array with explicit indexes for all
      *                                  the display elements
      * @param string $row_no            the row number
      * @param string $where_clause_html url encoded where clause
@@ -840,7 +841,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
      * @dataProvider dataProviderForGetCheckboxForMultiRowSubmissions
      */
     public function testGetCheckboxForMultiRowSubmissions(
-        $del_url, $is_display, $row_no, $where_clause_html, $condition_array,
+        $del_url, $displayParts, $row_no, $where_clause_html, $condition_array,
         $id_suffix, $class, $output
     ) {
         $this->assertEquals(
@@ -848,7 +849,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
             $this->_callPrivateFunction(
                 '_getCheckboxForMultiRowSubmissions',
                 array(
-                    $del_url, $is_display, $row_no, $where_clause_html,
+                    $del_url, $displayParts, $row_no, $where_clause_html,
                     $condition_array, $id_suffix, $class
                 )
             )
@@ -1263,7 +1264,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
      *
      * @param string $position          the position of the checkbox and links
      * @param string $del_url           delete url
-     * @param array  $is_display        array with explicit indexes for all the
+     * @param array  $displayParts      array with explicit indexes for all the
      *                                  display elements
      * @param string $row_no            row number
      * @param string $where_clause      where clause
@@ -1283,7 +1284,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
      * @dataProvider dataProviderForGetCheckboxAndLinks
      */
     public function testGetCheckboxAndLinks(
-        $position, $del_url, $is_display, $row_no, $where_clause,
+        $position, $del_url, $displayParts, $row_no, $where_clause,
         $where_clause_html, $condition_array, $edit_url,
         $copy_url, $class, $edit_str, $copy_str, $del_str, $js_conf, $output
     ) {
@@ -1292,7 +1293,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
             $this->_callPrivateFunction(
                 '_getCheckboxAndLinks',
                 array(
-                    $position, $del_url, $is_display, $row_no, $where_clause,
+                    $position, $del_url, $displayParts, $row_no, $where_clause,
                     $where_clause_html, $condition_array,
                     $edit_url, $copy_url, $class, $edit_str,
                     $copy_str, $del_str, $js_conf
@@ -1364,7 +1365,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
      *
      * @param string  $dir               the direction of links should place
      * @param string  $del_url           the url for delete row
-     * @param array   $is_display        which elements to display
+     * @param array   $displayParts      which elements to display
      * @param integer $row_no            the index of current row
      * @param string  $where_clause      the where clause of the sql
      * @param string  $where_clause_html the html encoded where clause
@@ -1383,7 +1384,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
      * @dataProvider dataProviderForGetPlacedLinks
      */
     public function testGetPlacedLinks(
-        $dir, $del_url, $is_display, $row_no, $where_clause, $where_clause_html,
+        $dir, $del_url, $displayParts, $row_no, $where_clause, $where_clause_html,
         $condition_array, $edit_url, $copy_url,
         $edit_anchor_class, $edit_str, $copy_str, $del_str, $js_conf, $output
     ) {
@@ -1392,7 +1393,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
             $this->_callPrivateFunction(
                 '_getPlacedLinks',
                 array(
-                    $dir, $del_url, $is_display, $row_no, $where_clause,
+                    $dir, $del_url, $displayParts, $row_no, $where_clause,
                     $where_clause_html, $condition_array,
                     $edit_url, $copy_url, $edit_anchor_class,
                     $edit_str, $copy_str, $del_str, $js_conf
@@ -1421,8 +1422,9 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 ),
                 'routine_name',
                 'db_routines.php?item_name=circumference&amp;db=data&amp;edit_'
-                . 'item=1&amp;item_type=FUNCTION&amp;server=0&amp;lang=en&amp;'
-                . 'token=token'
+                . 'item=1&amp;item_type=FUNCTION&amp;server=0&amp;lang=en'
+                . '&amp;collation_connection=utf-8'
+                . '&amp;token=token'
             ),
             array(
                 'information_schema',
@@ -1435,7 +1437,9 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 ),
                 'routine_name',
                 'db_routines.php?item_name=area&amp;db=data&amp;edit_item=1'
-                . '&amp;item_type=PROCEDURE&amp;server=0&amp;lang=en&amp;token=token'
+                . '&amp;item_type=PROCEDURE&amp;server=0&amp;lang=en'
+                . '&amp;collation_connection=utf-8'
+                . '&amp;token=token'
             ),
             array(
                 'information_schema',
@@ -1448,7 +1452,9 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 'column_name',
                 'index.php?sql_query=SELECT+%60CHARACTER_SET_NAME%60+FROM+%60info'
                 . 'rmation_schema%60.%60CHARACTER_SETS%60&amp;db=information_schema'
-                . '&amp;test_name=value&amp;server=0&amp;lang=en&amp;token=token'
+                . '&amp;test_name=value&amp;server=0&amp;lang=en'
+                . '&amp;collation_connection=utf-8'
+                . '&amp;token=token'
             )
         );
     }
@@ -1615,6 +1621,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 . '<input type="hidden" name="db" value="mysql" />'
                 . '<input type="hidden" name="table" value="user" />'
                 . '<input type="hidden" name="lang" value="en" />'
+                . '<input type="hidden" name="collation_connection" value="utf-8" />'
                 . '<input type="hidden" name="token" value="token" />'
                 . '<input type="hidden" name="sql_query" value="SELECT * FROM `user`" />'
                 . '<input type="hidden" name="pos" value="0" />'
@@ -1782,6 +1789,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 $url_params,
                 null,
                 '<a href="tbl_get_field.php?db=foo&amp;server=0&amp;lang=en'
+                . '&amp;collation_connection=utf-8'
                 . '&amp;token=token" class="disableAjax">31303031</a>'
             ),
             array(
@@ -1796,6 +1804,7 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 $url_params,
                 null,
                 '<a href="tbl_get_field.php?db=foo&amp;server=0&amp;lang=en'
+                . '&amp;collation_connection=utf-8'
                 . '&amp;token=token" class="disableAjax">[BLOB - 4 B]</a>'
             ),
             array(
@@ -1909,7 +1918,9 @@ class PMA_DisplayResults_Test extends PHPUnit_Framework_TestCase
                 0,
                 'binary',
                 '<td class="left   hex"><a href="tbl_get_field.php?'
-                . 'db=foo&amp;server=0&amp;lang=en&amp;token=token" '
+                . 'db=foo&amp;server=0&amp;lang=en'
+                . '&amp;collation_connection=utf-8'
+                . '&amp;token=token" '
                 . 'class="disableAjax">[BLOB - 4 B]</a></td>'
             ),
             array(

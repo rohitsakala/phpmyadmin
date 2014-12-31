@@ -57,7 +57,6 @@ function PMA_buildColumnCreationStatement(
                 PMA_Table::generateFieldSpec(
                     trim($_REQUEST['field_name'][$i]),
                     $_REQUEST['field_type'][$i],
-                    $i,
                     $_REQUEST['field_length'][$i],
                     $_REQUEST['field_attribute'][$i],
                     isset($_REQUEST['field_collation'][$i])
@@ -73,8 +72,7 @@ function PMA_buildColumnCreationStatement(
                     : false,
                     isset($_REQUEST['field_comments'][$i])
                     ? $_REQUEST['field_comments'][$i]
-                    : '',
-                    $field_primary
+                    : ''
                 );
 
         $definition .= PMA_setColumnCreationStatementSuffix($i, $is_create_tbl);

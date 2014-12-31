@@ -544,7 +544,7 @@ if ($GLOBALS['PMA_recoding_engine'] != PMA_CHARSET_NONE && isset($charset_of_fil
     if ($charset_of_file != 'utf-8') {
         $charset_conversion = true;
     }
-} elseif (isset($charset_of_file) && $charset_of_file != 'utf8') {
+} elseif (isset($charset_of_file) && $charset_of_file != 'utf-8') {
     if (PMA_DRIZZLE) {
         // Drizzle doesn't support other character sets,
         // so we can't fallback to SET NAMES - throw an error
@@ -711,7 +711,7 @@ if ($go_sql) {
         $html_output .= PMA_executeQueryAndGetQueryResponse(
             $analyzed_sql_results, false, $db, $table, null,
             $sql_query, null, $analyzed_sql_results['is_affected'],
-            null, null, null, null, $goto, $pmaThemeImage,
+            null, null, null, $goto, $pmaThemeImage,
             null, null, null, $sql_query, null, null
         );
     }

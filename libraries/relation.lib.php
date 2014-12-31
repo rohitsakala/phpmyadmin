@@ -310,7 +310,7 @@ function PMA_getRelationsParamDiagnostic($cfgRelation)
                     'Create the needed tables with the '
                     . '<code>%screate_tables.sql</code>.'
                 ),
-                htmlspecialchars(EXAMPLES_DIR)
+                htmlspecialchars(SQL_DIR)
             );
             $retval .= ' ' . PMA_Util::showDocu('setup', 'linked-tables');
             $retval .= '</li>';
@@ -603,7 +603,7 @@ function PMA_tryUpgradeTransformations()
             // try silent upgrade without disturbing the user
         } else {
             // read upgrade query file
-            $query = @file_get_contents(EXAMPLES_DIR . 'upgrade_column_info_4_3_0+.sql');
+            $query = @file_get_contents(SQL_DIR . 'upgrade_column_info_4_3_0+.sql');
             // replace database name from query to with set in config.inc.php
             $query = str_replace(
                 '`phpmyadmin`',
@@ -1774,14 +1774,14 @@ function PMA_searchColumnInForeigners($foreigners, $column)
 }
 
 /**
- * Searches a DB for the existence of PMA tables.
+ * Whether we found a set of tables in the specified db 
  *
  * @param string $db     Database
- * @param array  $tables Default table names
+ * @param array  $tables Table names
  *
- * @return bool
+ * @return bool  true if we found all of the tables in $db
  */
-function PMA_searchPMATablesInDb($db, $tables)
+function PMA_foundTablesInDb($db, $tables)
 {
     $tab_rs = $GLOBALS['dbi']->getTables($db);
 
@@ -1812,11 +1812,11 @@ function PMA_getDefaultPMATableNames()
     $pma_tables = array();
     if (PMA_DRIZZLE) {
         $create_tables_file = file_get_contents(
-            EXAMPLES_DIR. 'create_tables_drizzle.sql'
+            SQL_DIR . 'create_tables_drizzle.sql'
         );
     } else {
         $create_tables_file = file_get_contents(
-            EXAMPLES_DIR. 'create_tables.sql'
+            SQL_DIR . 'create_tables.sql'
         );
     }
 
